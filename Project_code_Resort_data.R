@@ -18,7 +18,7 @@ EnsurePackage("readxl")
 getwd()
 setwd("C:/Users/shubh/Desktop/IST 687/Final_Project")   # Set working directory according to your config
 
-resort_data <- read_excel("H1-Resort.xlsx")
+resort_data <- data.frame(read_excel("H1-Resort.xlsx"))
 #city_data <- read_excel("H2-City.xlsx")
 
 #################################  ANALYZING RESORT DATA ##################################################
@@ -84,6 +84,7 @@ str(resort_data)
 
 # converting  columns having dates as character to date data type. (Only 2 columns.....)
 
+resort_data$ArrivalDate <- c(1:nrow(resort_data))
 resort_data$ArrivalDate <- as.Date(resort_data$Arrival.Date)
 resort_data$Arrival.Date <- NULL
 
@@ -451,19 +452,20 @@ length(resort_data$IsCanceled)
 
 #  We can plot how many hotels were canceled for 2015, 2016, 2017
 
-min(resort_data$ReservationStatusDate)
-max(resort_data$ReservationStatusDate)
+
+str(resort_data)
+
+resort_data$Canceled <- ifelse(resort_data$IsCanceled == 1, "Canceled", "Not Canceled")
+
+ggplot(data = resort_data, aes(x = Season, y = ADR, fill = Canceled)) +
+  geom_bar(position = "dodge", stat = "identity")
 
 
+ggplot(data = resort_data, aes(x = Season, y = ADR, fill = IsRepeatedGuest)) +
+  geom_bar(position = "dodge", stat = "identity")
 
 
-
-
-
-
-
-
-
+resort_data$ADR[which(resort_data$ADR <= 0)]
 
 
 
