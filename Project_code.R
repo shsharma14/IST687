@@ -131,7 +131,7 @@ colSums(is.na(combined_data)) # Checking which columns have NA values.
 
 
 combined_data$ArrivalDate[which(is.na(combined_data$ArrivalDate) & combined_data$ReservationStatus == 'Check-Out')] <-
-combined_data$ReservationStatusDate - (combined_data$StaysInWeekendNights + combined_data$StaysInWeekNights)
+  combined_data$ReservationStatusDate - (combined_data$StaysInWeekendNights + combined_data$StaysInWeekNights)
 colSums(is.na(combined_data))  # Now, 1519 rows remain that have NA in arrival date. We will remove those NA values using na.omit().
 
 combined_data <- na.omit(combined_data)   # Removed all NA data.
