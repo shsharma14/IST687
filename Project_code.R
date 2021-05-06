@@ -8,7 +8,7 @@
 # Ambiguous Columms - Agent (is a character column containing agent IDs), Company
 
 
-
+cat('\014')
 rm(list=ls())
 
 EnsurePackage <- function(library) {
@@ -23,6 +23,7 @@ EnsurePackage("gdata")
 EnsurePackage("ggplot2")
 EnsurePackage("readxl")
 EnsurePackage("dplyr")
+EnsurePackage("gridExtra")
 
 #################################### Reading in the Data #################
 
@@ -33,8 +34,8 @@ resort_data <- data.frame(read_excel("H1-Resort.xlsx"))
 city_data <- read_excel("H2-City.xlsx")
 
 
-colnames(resort_data)
-colnames(city_data)
+# colnames(resort_data)
+# colnames(city_data)
 
 
 ########### Combining both dataset for better analysis.
@@ -66,22 +67,20 @@ city_data$HotelType <- "city"
 # Now, we can combine the data.
 combined_data <- rbind(city_data, resort_data)
 
-#################################  ANALYZING RESORT DATA ##################################################
-View(combined_data)
+#################################  CLEANING  DATA #########################################################################################################################
+# -------------------------------------------------------------------------------------------------
+###########################################################################################################################################################################
 
 
-str(combined_data)
+# View(combined_data)
 
-summary(combined_data)  # Checking descriptive stats of columns.
+# str(combined_data)
 
+# summary(combined_data)  # Checking descriptive stats of columns.
 
 
 # removing white spaces from categorical columns (https://stackoverflow.com/questions/20760547/removing-whitespace-from-a-whole-data-frame-in-r)
 # because Deposit type column contains values like "No Deposit       " instead of "No Deposit".      
-
-
-
-
 cols_to_be_rectified <- names(combined_data)[vapply(combined_data, is.character, logical(1))]
 combined_data[,cols_to_be_rectified] <- lapply(combined_data[,cols_to_be_rectified], trimws)
 
@@ -91,9 +90,8 @@ StringCleaner <- function(x) {
   x <- as.numeric(gsub(" .*", "", x))
   return(x)
 }
-
 combined_data$ADR <- StringCleaner(combined_data$ADR)
-str(combined_data)
+
 
 ############ MAKING COLUMNS PROPER DATATYPE  #######
 
@@ -119,31 +117,28 @@ combined_data$CustomerType <- as.factor(combined_data$CustomerType)
 combined_data$HotelType <- as.factor(combined_data$HotelType)
 
 
-str(combined_data)
+# str(combined_data)
 
 
-########################## checking for missing data  
+#----------------------- checking for missing data  -------------------------
 
 colSums(is.na(combined_data)) # Checking which columns have NA values.
-# Arrival date has 39042 missing values. 
+# Arrival date has 39270 missing values. 
 # we can get those values using ReservationStatusDate and StayinWeekNIghts and StayInWeekendNights where reservationstatus is checkout.
-
-
 
 combined_data$ArrivalDate[which(is.na(combined_data$ArrivalDate) & combined_data$ReservationStatus == 'Check-Out')] <-
   combined_data$ReservationStatusDate - (combined_data$StaysInWeekendNights + combined_data$StaysInWeekNights)
-colSums(is.na(combined_data))  # Now, 1519 rows remain that have NA in arrival date. We will remove those NA values using na.omit().
 
-combined_data <- na.omit(combined_data)   # Removed all NA data.
+# Now, 1519 rows remain that have NA in arrival date. We will remove those NA values using na.omit().
+colSums(is.na(combined_data))  
+
+# Removing all NA data.
+combined_data <- na.omit(combined_data)   
+
 anyNA(combined_data)   # FALSE meaning no NA values in dataset.
 
 
-
-
-
-
-
-################################ Adding new columns based on arrival date  #####################################
+#################------------------- Adding new columns based on arrival date  -----------------##########################
 
 #### SEASON COLUMN ######
 
@@ -166,50 +161,48 @@ combined_data$ArrivalYear <- as.factor(format(combined_data$ArrivalDate, "%Y"))
 combined_data$ArrivalMonth <- as.factor(month.name[as.numeric(format(combined_data$ArrivalDate, "%m"))])
 
 
-
-
-####################################################################################################
-
-####### Adding new categorical column, ParkingSpaceNeeded and AnySpecialRequests based on column RequiredCarParkingSpaces and TotalOfSpecialRequests  #######
+#######-----------------------Adding new categorical column, ParkingSpaceNeeded and AnySpecialRequests based on column 
+# RequiredCarParkingSpaces and TotalOfSpecialRequests ----------------------------###########################
 ### Might be useful for association rule mining
 
 combined_data$ParkingSpaceNeeded <- as.factor(ifelse(combined_data$RequiredCarParkingSpaces > 0 , "Yes", "No"))
 
 combined_data$AnySpecialRequest <- as.factor(ifelse(combined_data$TotalOfSpecialRequests > 0 , "Yes", "No"))
 
-###########################################################################################################################
 
 
-
-
-################################## adding new column visitor type based on number of adults, children and babies. ##########
-# Visitor Type can be Business Traveler, Solo Traveler, Couple and Family
+###################----------------- adding new column Visitor Type. ----------------####################
+########### Visitor Type can be Business Traveler, Solo Traveler, Couple and Family ########
 
 table(combined_data$Adults)  # Can remove 0 adults column since babies and children won't visit alone assuming children need to be accompanied by an adult.
 
-combined_data <- combined_data[-which(combined_data$Adults == 0),]
+# Removing using filter command.
+combined_data <- combined_data %>% dplyr::filter(Adults != 0)
+
+# ADR is zero for adults greater than 4.  ( 16 rows)
+combined_data$ADR[combined_data$Adults > 4]
+
+# Removing those 16 rows as well.
+combined_data <- combined_data %>% dplyr::filter(Adults < 5)
 
 '%notin%' <- Negate('%in%')
 
-# Adding a column VisitorType
-combined_data$VisitorType <- c(1:nrow(combined_data))
+# Adding the column
+combined_data$VisitorType <- c(1:nrow(combined_data))   # Initializing
 
-
-
+# SOLO TRAVELER
 combined_data$VisitorType[which(combined_data$Adults == 1 & combined_data$Babies == 0 & combined_data$Children == 0  & 
                                   combined_data$CustomerType %notin% "Group" )] <- "Solo Traveler"
 
-
-
+# COUPLE
 combined_data$VisitorType[which(combined_data$Adults == 2 & combined_data$Babies == 0 & combined_data$Children == 0  & 
                                   combined_data$CustomerType %notin% "Group" )] <- "Couple"
 
-
-
+# FAMILY
 combined_data$VisitorType[which(combined_data$Adults >= 2 & (combined_data$Babies != 0 | combined_data$Children != 0 ) & combined_data$DistributionChannel != "Corporate" &
                                   combined_data$CustomerType %notin% "Contract")] <- "Family"
 
-
+# BUSINESS TRAVEL
 combined_data$VisitorType[which(combined_data$Babies == 0 & combined_data$Children == 0 & combined_data$DistributionChannel == "Corporate")] <- "Business Travel"
 
 
@@ -226,13 +219,99 @@ dataframe <-
 #Analyzing above dataframe, remaining rows are majorly 3 adults having either 1 or more children or 1 or more babies and distribution channel as TA/TO - can classify 
 # them as families 
 
-combined_data$VisitorType[which(combined_data$VisitorType %notin% c("Solo Traveler", "Couple", "Business Travel") & combined_data$Adults >= 3 & combined_data$DistributionChannel != "Corporate" &
-                                  combined_data$CustomerType %notin% "Contract")] <- "Family"
-# Families rarely will have contract bookings.
+# FAMILY
+combined_data$VisitorType[which(combined_data$VisitorType %notin% c("Solo Traveler", "Couple", "Business Travel") & combined_data$Adults >= 3 
+                                & combined_data$DistributionChannel != "Corporate" & combined_data$CustomerType %notin% "Contract")] <- "Family"
+# Families rarely will have contract bookings, so excluded Customer Type as Contract.
 
+# Checking rows which are left to be labeled a visitor type
+length(combined_data$VisitorType[which(combined_data$VisitorType %notin% c("Solo Traveler", "Couple", "Business Travel", "Family"))])      # 1214 rows.
 
 # Removing remaining 1214 rows.
 combined_data <- combined_data %>% slice(-which(combined_data$VisitorType %notin% c("Solo Traveler", "Couple", "Business Travel", "Family")))
+
+
+
+
+
+#########################-------------Analyzing IsCanceled, ReservationStatus for any mismatched data-------------------##############################
+
+
+#                         ReservationStatus
+# IsCancelled      
+#                 Check-Out         No Show        Canceled
+# Canceled				   X                 
+# Not Canceled                                        X 
+
+# There shouldn't be any rows where ReservationStatus is Check-Out and Iscanceled shows Canceled. 
+length(which(combined_data$IsCanceled == "Canceled" & combined_data$ReservationStatus %in% "Check-Out"))  # 0 rows. THIS IS FINE!!!!
+
+# Similarly, there shouldn't be any rows where reservation Status is Canceled and IsCanceled contains Not Canceled.
+length(which(combined_data$IsCanceled == "Not Canceled" & combined_data$ReservationStatus %in% "Canceled")) # 0 rows. THIS IS FINE!!!!   
+
+
+####################----------------creating new Columns 1. Total Number of Days Stayed and 2. Average Revenue per Stay -------------############################### 
+
+# Summing up no of days stayed in Weekend and Weekdays
+combined_data$TotalNumberOfDaysStayed <- combined_data$StaysInWeekendNights + combined_data$StaysInWeekNights
+
+# Checking how many rows have total number of days stayed as zero.
+length(which(combined_data$TotalNumberOfDaysStayed == 0))   # Does it make sense to have this as 0? I dont think so.
+
+# Removing rows where TotalNumberOfDaysStayed = 0
+combined_data <- combined_data %>% slice(-which(combined_data$TotalNumberOfDaysStayed == 0))  
+
+# Before creating new column, let's get rid of outliers in ADR.
+summary(combined_data$ADR) # This shows 3rd quartile is 126 while max is 5400.
+
+# Boxplot of ADR is difficult to analyze because of that max value. We will remove that big outlier.
+ggplot(data = combined_data) + geom_boxplot(mapping = aes(x = ADR)) + coord_flip() 
+
+# removing that one big outlier of ADR
+combined_data <- combined_data[-which(combined_data$ADR > 5000),] 
+
+# Now draw boxplot again.
+ggplot(data = combined_data) + geom_boxplot(mapping = aes(x = ADR)) + coord_flip()  
+
+#New Column 
+combined_data$AvgRevenuePerStay <- combined_data$TotalNumberOfDaysStayed * combined_data$ADR
+
+
+####################----------------creating new Column ADRType (Categorizing ADR values by a range) -------------###############################
+
+# Histogram of ADR 
+ggplot(data = combined_data) + geom_histogram(mapping = aes(x = ADR),color = "white") +
+  scale_x_continuous(breaks = seq(from = 0, to = 500, by = 50)) + 
+  geom_vline(xintercept = quantile(combined_data$ADR, 0.75), col = "red") +
+  geom_vline(xintercept = quantile(combined_data$ADR, 0.15), col = "blue")
+
+# Based on the plot, maybe we can create a new categorical column where 0-50 can be low ADR, 50-150 can be medium ADR and above 150 can be high ADR.
+combined_data$ADRType <- cut(combined_data$ADR, breaks = c(0,50,150, Inf), labels = c("Low", "Medium", "High"), include.lowest = T)
+
+
+
+######################   ------- Final Check for NA values after creating new columns ###################################
+
+colSums(is.na(combined_data))   # ADRType has 1 NA.
+
+# Removing that 1 NA value
+combined_data <- na.omit(combined_data)
+
+
+################---------------------- Looking for Outliers --------------------------------------------#########################
+
+EnsurePackage("dlookr")
+diagnose_outlier(combined_data)
+
+str(combined_data)
+
+
+
+################################################   CLEANING DONE!!!!!! READY TO MAKE PLOTS ############################################
+# -------------------------------------------------------------------------------------------------------------------------------------
+#######################################################################################################################################
+
+
 
 
 
@@ -277,36 +356,8 @@ sort(table(combined_data$AnySpecialRequest), decreasing = T)
 
 
 sort(table(combined_data$VisitorType), decreasing = T)
-
-
-########### Looking for Outliers ###################
-
-
-EnsurePackage("dlookr")
-diagnose_outlier(combined_data)
-
-# First, let's get rid of outliers in ADR.
-
-summary(combined_data$ADR) # This shows 3rd quartile is 126 while max is 5400.
-
-# Boxplot of ADR is difficult to analyze because of that max value. First we will remove that to better analyze outliers.
-ggplot(data = combined_data) + geom_boxplot(mapping = aes(x = ADR)) + coord_flip() 
-
-combined_data <- combined_data[-which(combined_data$ADR > 5000),] # removed that one big outlier of ADR. Now draw boxplot again.
-
-
-ggplot(data = combined_data) + geom_boxplot(mapping = aes(x = ADR)) + coord_flip()  
-
-ggplot(data = combined_data) + geom_histogram(mapping = aes(x = ADR),color = "white") +
-  scale_x_continuous(breaks = seq(from = 0, to = 500, by = 50)) + 
-  geom_vline(xintercept = quantile(combined_data$ADR, 0.95), col = "red") +
-  geom_vline(xintercept = quantile(combined_data$ADR, 0.05), col = "blue")
-
-# Based on the plot, maybe we can create a new categorical column where 0-50 can be low ADR, 50-150 can be medium ADR and above 150 can be high ADR.
-combined_data$ADRType <- cut(combined_data$ADR, breaks = c(0,50,200, Inf), labels = c("Low", "Medium", "High"), include.lowest = T)
-
-
 sort(table(combined_data$ADRType), decreasing = T)
+
 
 
 
@@ -322,20 +373,71 @@ sort(table(combined_data$ADRType), decreasing = T)
 #Plot Boxplots/ Stacked Barcharts / Histogram / Map (since there is country data).
 # Grouped Boxplots  --  Categorical variables on x-axis and numerical variables on y-axis.
 
+# Cleaned resort data and city data seperately if needed for plots
+resort_data <- combined_data %>% dplyr::filter(HotelType == "resort")
+city_data <- combined_data %>% dplyr::filter(HotelType == "city")
 
-################ BIVARIATE POINT PLOTS ####################
+
+############### -------------- Histogram of Numerical Variables -------------#################################
 
 
-# 1. 
 
-Adult_ADR_plot <- ggplot(data = resort_data, aes(x = Adults, y = ADR)) + geom_point()
-Adult_ADR_plot + coord_cartesian(xlim=c(0,10)) + scale_x_continuous(breaks = seq(0,10,2)) + xlab("Number of adults")
+dplyr::select_if(combined_data, is.numeric)
+# Lead Time , DaysInWaitingList, TotalNumberofDaysStayed
 
-# We see that there is no data for adults more than 4. So, maybe we can filter out all the rows containing adults 5 or more than 5 since our outcome variable 
-# is zero for those values.
 
-EnsurePackage("dplyr")
-resort_data <- resort_data %>% dplyr::filter(Adults < 5) # Not much effect since only 16 rows are removed but still, cleaning out the noise. 
+
+
+# 1. Visualizing range of ADR by number of Adults and Hotel Type
+
+resort_plot <- ggplot(data = resort_data, aes(x = Adults, y = ADR)) + geom_point(color = "red") +
+  coord_cartesian(xlim=c(1,4)) + scale_x_continuous(breaks = seq(1,4,1)) + xlab("Number of adults") + 
+  ggtitle("Resort")
+
+city_plot <- ggplot(data = city_data, aes(x = Adults, y = ADR)) + geom_point(color = "blue") +
+  coord_cartesian(xlim=c(1,4)) + scale_x_continuous(breaks = seq(1,4,1)) + xlab("Number of adults") +
+  ggtitle("City")
+
+grid.arrange(resort_plot, city_plot, ncol = 2)
+
+
+
+# 2 Season_VisitorType_ADR
+
+Season_VisitorType_ADR <- data.frame(aggregate(addition3$ADR, 
+                                               by=list(type=addition3$VisitorType,type=addition3$Season),mean))
+colnames(Season_VisitorType_ADR) <- c("VisitorType","Season","mean_ADR")
+b1 <- ggplot(data=Season_VisitorType_ADR, mapping=aes(x = Season, y = mean_ADR, fill=VisitorType))+
+  geom_bar(stat="identity",position=position_dodge(0.75),width=0.6)
+b1
+
+# ADR for visitor types of families is the highest regardless of the season, so offering discounts for 
+###families to attract more family travelers, especially in the summer, is a good way to increase overall ADR.
+###2. In addition, the ADR for visitor types of couples and singles is similar in most seasons, higher for 
+###couples in the spring and higher for singles in the summer. Therefore, we should make it a secondary 
+###priority to attract couple type visitors to stay in spring, and try to attract more single visitors in summer.
+
+#3 Season_StayIn_ADR
+
+Season_StayIn_ADR <- data.frame(aggregate(addition3$ADR, 
+                                          by=list(type=addition3$StayIn,type=addition3$Season),mean))
+colnames(Season_StayIn_ADR) <- c("StayIn","Season","mean_ADR")
+b2 <- ggplot(data=Season_StayIn_ADR, mapping=aes(x = StayIn, y = mean_ADR, color=Season))+
+  geom_line()
+b2
+
+# In spring, ADR is highest for stays around 20 days and lower for stays around 16 or 17 days and after 23 
+###days. Therefore, visitors with stays around 16 or 17 days, or greater than 23 days should be enticed to
+###upgrade their stays to around 20 days by adjusting the price or offering some free services.
+###2. In summer, when the length of stay is 10-20 days, the ADR fluctuates sharply. Therefore, hotels can 
+###control the length of stay at 10, 13 or 16 days by offering package deals.
+###3. In fall, the ADR is at its highest at 14 days of stay, so hotels should offer trips with 14 days of stay.
+###Also when the number of stay days is greater than 18, ADR drops significantly and is at a lower level 
+###until 26 days when it returns to normal. Therefore for visitors who stay in greater than 18 but less than 
+###26 days, hotel should increase the rates to avoid the number of days of stay in this time period.
+###4. In winter, ADR rises rapidly when the number of days of stay is greater than 28 days, so hotels should 
+###attract visitors for longer stays (greater than 28 days) in winter.
+
 
 
 
