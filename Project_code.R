@@ -181,23 +181,9 @@ combined_data$AnySpecialRequest <- as.factor(ifelse(combined_data$TotalOfSpecial
 
 
 
-length(which(combined_data$Babies == 0 & combined_data$Children == 0 & combined_data$DistributionChannel == "Corporate")) + 
-  
-  length(which(combined_data$Adults == 1 & combined_data$Babies == 0 & combined_data$Children == 0 & combined_data$DistributionChannel != "Corporate" & 
-                 (combined_data$CustomerType == "Transient" | combined_data$CustomerType == "Transient-Party"))) +
-  
-  
-  length(which(combined_data$Adults == 2 & combined_data$Babies == 0 & combined_data$Children == 0 & combined_data$DistributionChannel != "Corporate" & 
-                 (combined_data$CustomerType == "Transient" | combined_data$CustomerType == "Transient-Party"))) +
-  
-  
-  
-  length(which(combined_data$Adults >= 2 & (combined_data$Babies != 0 | combined_data$Children != 0 ) & combined_data$DistributionChannel != "Corporate" & combined_data$CustomerType != "Contract"))
-
-
 
 ################################## adding new column visitor type based on number of adults, children and babies. ##########
-# Visitor Type can be Bi, Couples and Family
+# Visitor Type can be Business Traveler, Solo Traveler, Couple and Family
 
 table(combined_data$Adults)  # Can remove 0 adults column since babies and children won't visit alone assuming children need to be accompanied by an adult.
 
@@ -328,7 +314,7 @@ sort(table(combined_data$ADRType), decreasing = T)
 
 
 
-
+########################## 
 
 
 #######################################################------------- PLOTS  -----------------------###################################################
