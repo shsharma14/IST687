@@ -1,3 +1,14 @@
+
+# RESPONSE/DEPENDENT/OUTCOME Variable - ADR
+# CATEGORICAL COLUMNS (By Default) - ReservationStatus, Meal, Country, MarketSegment, DistributionChannel, ReservedRoomType, AssignedRoomType, DepositType, 
+# CustomerType
+# Numerical Columns - Lead Time, StaysInWeekendNights, StaysInWeekNights, Adults, Children, Babies, PreviousCancellations, PreviousBookingsNotCanceled, BookingChanges,
+# BookingChanges, DaysInWaitingList, ADR, RequiredCarParkingSpaces, TotalOfSpecialRequests
+# Date Columns - Arrival.Date, ReservationStatusDate
+# Ambiguous Columms - Agent (is a character column containing agent IDs), Company
+
+
+
 rm(list=ls())
 
 EnsurePackage <- function(library) {
@@ -11,63 +22,68 @@ EnsurePackage <- function(library) {
 EnsurePackage("gdata")
 EnsurePackage("ggplot2")
 EnsurePackage("readxl")
+EnsurePackage("dplyr")
 
 #################################### Reading in the Data #################
-###################### Only resort Data ############################
 
 getwd()
 setwd("C:/Users/shubh/Desktop/IST 687/Final_Project")   # Set working directory according to your config
 
 resort_data <- data.frame(read_excel("H1-Resort.xlsx"))
-#city_data <- read_excel("H2-City.xlsx")
+city_data <- read_excel("H2-City.xlsx")
+
+
+colnames(resort_data)
+colnames(city_data)
+
+
+########### Combining both dataset for better analysis.
+
+# To combine rows using rbind, we need to match the row names. In both dataset, one column name is different, "Arrival.Date" in resort data & "Arrival Date" in city data
+
+# converting  columns having dates as character to date data type. (Only 2 columns.....) and renaming arrival date column in both to apply rbind.
+
+resort_data$ArrivalDate <- c(1:nrow(resort_data))
+resort_data$ArrivalDate <- as.Date(resort_data$Arrival.Date)
+resort_data$Arrival.Date <- NULL
+
+resort_data$ReservationStatusDate <- as.Date(resort_data$ReservationStatusDate)
+
+
+city_data$ArrivalDate <- c(1:nrow(city_data))
+city_data$ArrivalDate <- as.Date(city_data$'Arrival Date')
+city_data$'Arrival Date' <- NULL
+
+resort_data$ReservationStatusDate <- as.Date(resort_data$ReservationStatusDate)
+
+city_data$ReservationStatusDate <- as.Date(city_data$ReservationStatusDate)
+
+
+resort_data$HotelType <- "resort"
+city_data$HotelType <- "city"
+
+
+# Now, we can combine the data.
+combined_data <- rbind(city_data, resort_data)
 
 #################################  ANALYZING RESORT DATA ##################################################
-View(resort_data)
+View(combined_data)
 
 
+str(combined_data)
 
-str(resort_data)
-#str(city_data)
-
-
-
-# RESPONSE/DEPENDENT/OUTCOME Variable - ADR
-
-# CATEGORICAL COLUMNS (By Default) - ReservationStatus, Meal, Country, MarketSegment, DistributionChannel, ReservedRoomType, AssignedRoomType, DepositType, 
-# CustomerType
-
-# Numerical Columns - Lead Time, StaysInWeekendNights, StaysInWeekNights, Adults, Children, Babies, PreviousCancellations, PreviousBookingsNotCanceled, BookingChanges,
-# BookingChanges, DaysInWaitingList, ADR, RequiredCarParkingSpaces, TotalOfSpecialRequests
-
-# Columns that can be turned into factors - IsCanceled, IsRepeatedGuest
-
-# Date Columns - Arrival.Date, ReservationStatusDate
-
-# Ambiguous Columms - Agent (is a character column containing agent IDs), Company
-
-
-
-
-
-colnames(resort_data)  #Using this, we see the columns and ensure that no columns have spaces in between them. 
-# We can access a column with space by using backticks (``).
-
-
-summary(resort_data)  # Checking descriptive stats of columns.
-
-
-colSums(is.na(resort_data)) # Checking which columns have NA values.
-table(rowSums(is.na(resort_data)))
-
+summary(combined_data)  # Checking descriptive stats of columns.
 
 
 
 # removing white spaces from categorical columns (https://stackoverflow.com/questions/20760547/removing-whitespace-from-a-whole-data-frame-in-r)
-
-cols_to_be_rectified <- names(resort_data)[vapply(resort_data, is.character, logical(1))]
-resort_data[,cols_to_be_rectified] <- lapply(resort_data[,cols_to_be_rectified], trimws)
+# because Deposit type column contains values like "No Deposit       " instead of "No Deposit".      
 
 
+
+
+cols_to_be_rectified <- names(combined_data)[vapply(combined_data, is.character, logical(1))]
+combined_data[,cols_to_be_rectified] <- lapply(combined_data[,cols_to_be_rectified], trimws)
 
 
 #Cleaning column ADR. Removing excess characters and converting into numeric.
@@ -76,80 +92,243 @@ StringCleaner <- function(x) {
   return(x)
 }
 
-resort_data$ADR <- StringCleaner(resort_data$ADR)
-str(resort_data)
+combined_data$ADR <- StringCleaner(combined_data$ADR)
+str(combined_data)
+
+############ MAKING COLUMNS PROPER DATATYPE  #######
+
+# https://datascience.stackexchange.com/questions/12018/when-to-choose-character-instead-of-factor-in-r
+
+####### Convert character columns to factors and character columns containing numeric values to num.
+#combined_data[sapply(combined_data, is.character)] <-
+#  lapply(combined_data[sapply(combined_data, is.character)], as.factor)
+
+
+combined_data$IsCanceled <- factor(combined_data$IsCanceled, labels = c("Not Canceled", "Canceled"))
+combined_data$ReservationStatus <- as.factor(combined_data$ReservationStatus)
+combined_data$Children <- as.numeric(combined_data$Children)
+combined_data$Meal <- as.factor(combined_data$Meal)
+combined_data$Country <- as.factor(combined_data$Country)
+combined_data$MarketSegment <- as.factor(combined_data$MarketSegment)
+combined_data$DistributionChannel <- as.factor(combined_data$DistributionChannel)
+combined_data$IsRepeatedGuest <- factor(combined_data$IsRepeatedGuest,  labels = c("Not Repeated", "Repeated"))
+combined_data$ReservedRoomType <- as.factor(combined_data$ReservedRoomType)
+combined_data$AssignedRoomType <- as.factor(combined_data$AssignedRoomType)
+combined_data$DepositType <- as.factor(combined_data$DepositType)
+combined_data$CustomerType <- as.factor(combined_data$CustomerType)
+combined_data$HotelType <- as.factor(combined_data$HotelType)
+
+
+str(combined_data)
+
+
+########################## checking for missing data  
+
+colSums(is.na(combined_data)) # Checking which columns have NA values.
+# Arrival date has 39042 missing values. 
+# we can get those values using ReservationStatusDate and StayinWeekNIghts and StayInWeekendNights where reservationstatus is checkout.
+
+
+
+combined_data$ArrivalDate[which(is.na(combined_data$ArrivalDate) & combined_data$ReservationStatus == 'Check-Out')] <-
+combined_data$ReservationStatusDate - (combined_data$StaysInWeekendNights + combined_data$StaysInWeekNights)
+colSums(is.na(combined_data))  # Now, 1519 rows remain that have NA in arrival date. We will remove those NA values using na.omit().
+
+combined_data <- na.omit(combined_data)   # Removed all NA data.
+anyNA(combined_data)   # FALSE meaning no NA values in dataset.
 
 
 
 
-# converting  columns having dates as character to date data type. (Only 2 columns.....)
 
-resort_data$ArrivalDate <- c(1:nrow(resort_data))
-resort_data$ArrivalDate <- as.Date(resort_data$Arrival.Date)
-resort_data$Arrival.Date <- NULL
 
-resort_data$ReservationStatusDate <- as.Date(resort_data$ReservationStatusDate)
+
+################################ Adding new columns based on arrival date  #####################################
+
+#### SEASON COLUMN ######
+
+EnsurePackage("lubridate")
+combined_data$Season <- quarter(combined_data$ArrivalDate)
+combined_data$Season[combined_data$Season == 1] <- "Spring"
+combined_data$Season[combined_data$Season == 2] <- "Summer"
+combined_data$Season[combined_data$Season == 3] <- "Fall"
+combined_data$Season[combined_data$Season == 4] <- "Winter"
+
+combined_data$Season <- as.factor(combined_data$Season)
+
+
+### Arrival Year column ######
+
+combined_data$ArrivalYear <- as.factor(format(combined_data$ArrivalDate, "%Y"))
+
+#### Arrival Month Column ######
+
+combined_data$ArrivalMonth <- as.factor(month.name[as.numeric(format(combined_data$ArrivalDate, "%m"))])
+
+
+
+
+####################################################################################################
+
+####### Adding new categorical column, ParkingSpaceNeeded and AnySpecialRequests based on column RequiredCarParkingSpaces and TotalOfSpecialRequests  #######
+### Might be useful for association rule mining
+
+combined_data$ParkingSpaceNeeded <- as.factor(ifelse(combined_data$RequiredCarParkingSpaces > 0 , "Yes", "No"))
+
+combined_data$AnySpecialRequest <- as.factor(ifelse(combined_data$TotalOfSpecialRequests > 0 , "Yes", "No"))
+
+###########################################################################################################################
+
+
+
+length(which(combined_data$Babies == 0 & combined_data$Children == 0 & combined_data$DistributionChannel == "Corporate")) + 
+  
+  length(which(combined_data$Adults == 1 & combined_data$Babies == 0 & combined_data$Children == 0 & combined_data$DistributionChannel != "Corporate" & 
+                 (combined_data$CustomerType == "Transient" | combined_data$CustomerType == "Transient-Party"))) +
+  
+  
+  length(which(combined_data$Adults == 2 & combined_data$Babies == 0 & combined_data$Children == 0 & combined_data$DistributionChannel != "Corporate" & 
+                 (combined_data$CustomerType == "Transient" | combined_data$CustomerType == "Transient-Party"))) +
+  
+  
+  
+  length(which(combined_data$Adults >= 2 & (combined_data$Babies != 0 | combined_data$Children != 0 ) & combined_data$DistributionChannel != "Corporate" & combined_data$CustomerType != "Contract"))
+
+
+
+################################## adding new column visitor type based on number of adults, children and babies. ##########
+# Visitor Type can be Bi, Couples and Family
+
+table(combined_data$Adults)  # Can remove 0 adults column since babies and children won't visit alone assuming children need to be accompanied by an adult.
+
+combined_data <- combined_data[-which(combined_data$Adults == 0),]
+
+'%notin%' <- Negate('%in%')
+
+# Adding a column VisitorType
+combined_data$VisitorType <- c(1:nrow(combined_data))
+
+
+
+combined_data$VisitorType[which(combined_data$Adults == 1 & combined_data$Babies == 0 & combined_data$Children == 0  & 
+                                  combined_data$CustomerType %notin% "Group" )] <- "Solo Traveler"
+
+
+
+combined_data$VisitorType[which(combined_data$Adults == 2 & combined_data$Babies == 0 & combined_data$Children == 0  & 
+                                  combined_data$CustomerType %notin% "Group" )] <- "Couple"
+
+
+
+combined_data$VisitorType[which(combined_data$Adults >= 2 & (combined_data$Babies != 0 | combined_data$Children != 0 ) & combined_data$DistributionChannel != "Corporate" &
+                                  combined_data$CustomerType %notin% "Contract")] <- "Family"
+
+
+combined_data$VisitorType[which(combined_data$Babies == 0 & combined_data$Children == 0 & combined_data$DistributionChannel == "Corporate")] <- "Business Travel"
+
+
+dataframe <-
+  combined_data[which(
+    combined_data$VisitorType %notin% c("Solo Traveler", "Couple", "Business Travel", "Family")
+  ),
+  c("Adults",
+    "Children",
+    "Babies",
+    "DistributionChannel",
+    "CustomerType")]
+
+#Analyzing above dataframe, remaining rows are majorly 3 adults having either 1 or more children or 1 or more babies and distribution channel as TA/TO - can classify 
+# them as families 
+
+combined_data$VisitorType[which(combined_data$VisitorType %notin% c("Solo Traveler", "Couple", "Business Travel") & combined_data$Adults >= 3 & combined_data$DistributionChannel != "Corporate" &
+                                  combined_data$CustomerType %notin% "Contract")] <- "Family"
+# Families rarely will have contract bookings.
+
+
+# Removing remaining 1214 rows.
+combined_data <- combined_data %>% slice(-which(combined_data$VisitorType %notin% c("Solo Traveler", "Couple", "Business Travel", "Family")))
+
+
+
+############ Tables for variables. #################
+str(combined_data)
+
+sort(table(combined_data$IsCanceled), decreasing = T)
+sort(table(combined_data$ReservationStatus), decreasing = T)
+
+sort(table(combined_data$StaysInWeekendNights), decreasing = T)
+sort(table(combined_data$StaysInWeekNights), decreasing = T)
+sort(table(combined_data$Adults), decreasing = T)
+sort(table(combined_data$Children), decreasing = T)
+sort(table(combined_data$Babies), decreasing = T)
+
+sort(table(combined_data$Meal), decreasing = T)
+sort(table(combined_data$Country), decreasing = T)
+sort(table(combined_data$MarketSegment), decreasing = T)
+sort(table(combined_data$DistributionChannel), decreasing = T)
+sort(table(combined_data$IsRepeatedGuest), decreasing = T)
+
+sort(table(combined_data$PreviousCancellations), decreasing = T)
+sort(table(combined_data$PreviousBookingsNotCanceled), decreasing = T)
+
+sort(table(combined_data$ReservedRoomType), decreasing = T)
+sort(table(combined_data$AssignedRoomType), decreasing = T)
+sort(table(combined_data$BookingChanges), decreasing = T)
+sort(table(combined_data$DepositType), decreasing = T)
+sort(table(combined_data$DaysInWaitingList), decreasing = T)
+sort(table(combined_data$CustomerType), decreasing = T)
+sort(table(combined_data$RequiredCarParkingSpaces), decreasing = T)
+sort(table(combined_data$TotalOfSpecialRequests), decreasing = T)
+sort(table(combined_data$HotelType), decreasing = T)
+
+sort(table(combined_data$ArrivalYear), decreasing = T)
+sort(table(combined_data$ArrivalMonth), decreasing = T)
+sort(table(combined_data$Season), decreasing = T)
+
+sort(table(combined_data$ParkingSpaceNeeded), decreasing = T)
+
+sort(table(combined_data$AnySpecialRequest), decreasing = T)
+
+
+sort(table(combined_data$VisitorType), decreasing = T)
+
 
 ########### Looking for Outliers ###################
 
 
 EnsurePackage("dlookr")
-diagnose_outlier(resort_data)
-plot_outlier(resort_data)
+diagnose_outlier(combined_data)
+
+# First, let's get rid of outliers in ADR.
+
+summary(combined_data$ADR) # This shows 3rd quartile is 126 while max is 5400.
+
+# Boxplot of ADR is difficult to analyze because of that max value. First we will remove that to better analyze outliers.
+ggplot(data = combined_data) + geom_boxplot(mapping = aes(x = ADR)) + coord_flip() 
+
+combined_data <- combined_data[-which(combined_data$ADR > 5000),] # removed that one big outlier of ADR. Now draw boxplot again.
 
 
-############ Tables for categorical variables. #################
+ggplot(data = combined_data) + geom_boxplot(mapping = aes(x = ADR)) + coord_flip()  
+
+ggplot(data = combined_data) + geom_histogram(mapping = aes(x = ADR),color = "white") +
+  scale_x_continuous(breaks = seq(from = 0, to = 500, by = 50)) + 
+  geom_vline(xintercept = quantile(combined_data$ADR, 0.95), col = "red") +
+  geom_vline(xintercept = quantile(combined_data$ADR, 0.05), col = "blue")
+
+# Based on the plot, maybe we can create a new categorical column where 0-50 can be low ADR, 50-150 can be medium ADR and above 150 can be high ADR.
+combined_data$ADRType <- cut(combined_data$ADR, breaks = c(0,50,200, Inf), labels = c("Low", "Medium", "High"), include.lowest = T)
 
 
-sort(table(resort_data$ReservationStatus), decreasing = T)
-sort(table(resort_data$Meal), decreasing = T)
-sort(table(resort_data$Country), decreasing = T)
-sort(table(resort_data$MarketSegment), decreasing = T)
-sort(table(resort_data$DistributionChannel), decreasing = T)
-sort(table(resort_data$ReservedRoomType), decreasing = T)
-sort(table(resort_data$AssignedRoomType), decreasing = T)
-sort(table(resort_data$DepositType), decreasing = T)
-sort(table(resort_data$CustomerType), decreasing = T)
-
-sort(table(resort_data$IsCanceled), decreasing = T)
-sort(table(resort_data$IsRepeatedGuest), decreasing = T)
+sort(table(combined_data$ADRType), decreasing = T)
 
 
 
 
 
-################################ Adding new column SEASON based on arrival date  #####################################3
-# and then we can plot ADR vs Season  ##############
-
-EnsurePackage("lubridate")
-resort_data$Season <- quarter(resort_data$ArrivalDate)
-resort_data$Season[resort_data$Season == 1] <- "Spring"
-resort_data$Season[resort_data$Season == 2] <- "Summer"
-resort_data$Season[resort_data$Season == 3] <- "Fall"
-resort_data$Season[resort_data$Season == 4] <- "Winter"
 
 
-################################## adding new column visitor type based on number of adults, children and babies. ##########
-# Visitor Type can be Single, Couples and Family
 
-table(resort_data$Adults)  # Can remove 0 adults column since babies and children won't visit alone assuming children need to be accompanied by an adult.
-
-resort_data <- resort_data[-which(resort_data$Adults == 0),]
-
-# Adding a column VisitorType
-resort_data$VisitorType <- c(1:nrow(resort_data))
-
-# If num(Adults) is 1 & num(babies & CHildren = 0), can label as single. 
-resort_data$VisitorType[which(resort_data$Adults == 1 & resort_data$Children == 0 & resort_data$Babies == 0)] <- "Single"
-
-# If num(Adults) is 2 & num(babies & CHildren = 0), can label as couple. 
-resort_data$VisitorType[which(resort_data$Adults == 2 & resort_data$Children == 0 & resort_data$Babies == 0)] <- "Couple"
-
-# If num(Adults) is 2 or greater than 2 & num(babies | CHildren != 0), can label as family. 
-resort_data$VisitorType[which(resort_data$Adults >= 2 & (resort_data$Babies != 0 | resort_data$Children != 0))] <- "Family"
-
-# Remaining ones (When adults >=2 & children,Babies = 0) are also family.
-resort_data$VisitorType[which(resort_data$VisitorType != c("Couple", "Single", "Family"))] <- "Family"
 
 
 #######################################################------------- PLOTS  -----------------------###################################################
