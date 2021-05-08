@@ -404,39 +404,26 @@ grid.arrange(resort_plot, city_plot, ncol = 2)
 
 # 2 Season_VisitorType_ADR
 
-Season_VisitorType_ADR <- data.frame(aggregate(addition3$ADR, 
-                                               by=list(type=addition3$VisitorType,type=addition3$Season),mean))
-colnames(Season_VisitorType_ADR) <- c("VisitorType","Season","mean_ADR")
-b1 <- ggplot(data=Season_VisitorType_ADR, mapping=aes(x = Season, y = mean_ADR, fill=VisitorType))+
+Season_VisitorType_ADR_city <- data.frame(aggregate(city_data$ADR, 
+                                               by=list(type=city_data$VisitorType,type=city_data$Season),mean))
+colnames(Season_VisitorType_ADR_city) <- c("VisitorType","Season","mean_ADR")
+S_V_P_city <- ggplot(data=Season_VisitorType_ADR_city, mapping=aes(x = Season, y = mean_ADR, fill=VisitorType))+
   geom_bar(stat="identity",position=position_dodge(0.75),width=0.6)
-b1
+S_V_P_city
 
-# ADR for visitor types of families is the highest regardless of the season, so offering discounts for 
-###families to attract more family travelers, especially in the summer, is a good way to increase overall ADR.
-###2. In addition, the ADR for visitor types of couples and singles is similar in most seasons, higher for 
-###couples in the spring and higher for singles in the summer. Therefore, we should make it a secondary 
-###priority to attract couple type visitors to stay in spring, and try to attract more single visitors in summer.
+Season_VisitorType_ADR_resort <- data.frame(aggregate(resort_data$ADR, 
+                                               by=list(type=resort_data$VisitorType,type=resort_data$Season),mean))
+colnames(Season_VisitorType_ADR_resort) <- c("VisitorType","Season","mean_ADR")
+S_V_P_resort <- ggplot(data=Season_VisitorType_ADR_resort, mapping=aes(x = Season, y = mean_ADR, fill=VisitorType))+
+  geom_bar(stat="identity",position=position_dodge(0.75),width=0.6)
+S_V_P_resort
 
-#3 Season_StayIn_ADR
-
-Season_StayIn_ADR <- data.frame(aggregate(addition3$ADR, 
-                                          by=list(type=addition3$StayIn,type=addition3$Season),mean))
-colnames(Season_StayIn_ADR) <- c("StayIn","Season","mean_ADR")
-b2 <- ggplot(data=Season_StayIn_ADR, mapping=aes(x = StayIn, y = mean_ADR, color=Season))+
-  geom_line()
-b2
-
-# In spring, ADR is highest for stays around 20 days and lower for stays around 16 or 17 days and after 23 
-###days. Therefore, visitors with stays around 16 or 17 days, or greater than 23 days should be enticed to
-###upgrade their stays to around 20 days by adjusting the price or offering some free services.
-###2. In summer, when the length of stay is 10-20 days, the ADR fluctuates sharply. Therefore, hotels can 
-###control the length of stay at 10, 13 or 16 days by offering package deals.
-###3. In fall, the ADR is at its highest at 14 days of stay, so hotels should offer trips with 14 days of stay.
-###Also when the number of stay days is greater than 18, ADR drops significantly and is at a lower level 
-###until 26 days when it returns to normal. Therefore for visitors who stay in greater than 18 but less than 
-###26 days, hotel should increase the rates to avoid the number of days of stay in this time period.
-###4. In winter, ADR rises rapidly when the number of days of stay is greater than 28 days, so hotels should 
-###attract visitors for longer stays (greater than 28 days) in winter.
+#1. For the two hotels, ADR of visitor types as family is the highest regardless of the season. Therefore,
+#hotels could try to attract more family visitors by providing extra children's products such as children's 
+#chairs or small toys, or by having a children's play center.
+#2. For city hotel, the ADR for the same traveler type varies little with the season. But for resort hotel,
+#the ADR is significantly highest in the fall. Therefore, for resort hotel, a large amount of the advertising
+#budget should be spent in the fall to attract as many visitors as possible.
 
 
 
@@ -740,6 +727,8 @@ mp_resort <- ggplot(dfNew, aes(x = long, y = lat, group = group)) +
        y="Latitude", x="Longitude") +
   theme_light() 
 mp_resort
+
+
 ##################################################################################
 
 # Bar charts - 
