@@ -693,8 +693,53 @@ mp <- ggplot() +   mapWorld
 mp <- mp+ geom_point(aes(x=resort_data$Countrylon, y=resort_data$Countrylat) ,color="blue", size=1) 
 mp + coord_map()
 
+#################################################################################################################################
+# Map —— Number Of Reservations From Different Countries
+Country_city <- city_data[-which(city_data$Country=="NULL"),]
+table(Country_city$Country)
+Country_city <- data.frame(table(Country_city$Country))
+Country_city$Var1 <- as.character(Country_city$Var1)
+colnames(Country_city) <- c("Country","NumberOfReservation")
+world <- map_data('world')
+library(countrycode)
+Country_city$Country[which(Country_city$Country=="CN")] <- "CHN"
+Country_city$Country[which(Country_city$Country=="TMP")] <- "TLS"
+Country_city$Country_Name <- countrycode(Country_city$Country,"iso3c","country.name")
+Country_city$Country_Name[which(Country_city$Country=="USA")] <- "USA"
+dfNew_city <- merge(world, Country_city, all.x=TRUE, by.x="region", by.y="Country_Name")
+dfNew_city <- dfNew_city[order(dfNew_city[,5]),]
+mp_city <- ggplot(dfNew_city, aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill= NumberOfReservation), colour = "white") +
+  scale_x_continuous(breaks = seq(-180, 210, 45), labels = function(x){paste0(x, "°")}) +
+  scale_y_continuous(breaks = seq(-60, 100, 30), labels = function(x){paste0(x, "°")}) +
+  scale_fill_gradient(low = "blue", high="red") +
+  labs(title="Number Of Reservations From Different Countries",
+       y="Latitude", x="Longitude") +
+  theme_light() 
+mp_city
 
-
+Country_resort <- resort_data[-which(resort_data$Country=="NULL"),]
+table(Country_resort$Country)
+Country_resort <- data.frame(table(Country_resort$Country))
+Country_resort$Var1 <- as.character(Country_resort$Var1)
+colnames(Country_resort) <- c("Country","NumberOfReservation")
+world <- map_data('world')
+library(countrycode)
+Country_resort$Country[which(Country_resort$Country=="CN")] <- "CHN"
+Country_resort$Country[which(Country_resort$Country=="TMP")] <- "TLS"
+Country_resort$Country_Name <- countrycode(Country_resort$Country,"iso3c","country.name")
+Country_resort$Country_Name[which(Country_resort$Country=="USA")] <- "USA"
+dfNew_resort <- merge(world, Country_resort, all.x=TRUE, by.x="region", by.y="Country_Name")
+dfNew_resort <- dfNew_resort[order(dfNew_resort[,5]),]
+mp_resort <- ggplot(dfNew, aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill= NumberOfReservation), colour = "white") +
+  scale_x_continuous(breaks = seq(-180, 210, 45), labels = function(x){paste0(x, "°")}) +
+  scale_y_continuous(breaks = seq(-60, 100, 30), labels = function(x){paste0(x, "°")}) +
+  scale_fill_gradient(low = "blue", high="red") +
+  labs(title="Number Of Reservations From Different Countries",
+       y="Latitude", x="Longitude") +
+  theme_light() 
+mp_resort
 ##################################################################################
 
 # Bar charts - 
