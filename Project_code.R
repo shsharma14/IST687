@@ -769,5 +769,77 @@ ggplot(data = resort_data, aes(x = Season, y = ADR, fill = IsRepeatedGuest)) +
 resort_data$ADR[which(resort_data$ADR <= 0)]
 
 
+##################################################################################
 
+# Association rules mining —— cancellation ~ VisitorType/DepositType/Season
 
+#city hotel
+
+library(arules)
+library(arulesViz)
+
+city_data$VisitorType <- as.factor(city_data$VisitorType)
+Cencal_Visitor_city <- data.frame(city_data$IsCanceled, city_data$VisitorType)
+Cencal_Visitor_city_trans <- as(Cencal_Visitor_city,"transactions")
+rules1 <- apriori(Cencal_Visitor_city_trans, 
+                  parameter=list(supp=0.005, conf=0.1), 
+                  control=list(verbose=F),
+                  appearance=list(default="lhs",rhs=("city_data.IsCanceled=Canceled")))
+inspect(rules1)
+#The reservation cancellation rate for business travel is only about 50% of the overall cancellation rate. Therefore, 
+#city hotel can charge only a low deposit when making reservations for business travel.
+
+Cencal_Deposit_city <- data.frame(city_data$IsCanceled, city_data$DepositType)
+Cencal_Deposit_city_trans <- as(Cencal_Deposit_city,"transactions")
+rules2 <- apriori(Cencal_Deposit_city_trans, 
+                  parameter=list(supp=0.0001, conf=0.1), 
+                  control=list(verbose=F),
+                  appearance=list(default="lhs",rhs=("city_data.IsCanceled=Canceled")))
+inspect(rules2)
+#Non Refund – a deposit was made in the value of the total stay cost
+#It's a strange correlation that the cancellation rate is nearly 100% for appointments that require a full deposit with 
+#no refund. The cancellation rate for reservation that do not require a deposit is lower than the overall cancellation rate.
+
+Cencal_Season_city <- data.frame(city_data$IsCanceled, city_data$Season)
+Cencal_Season_city_trans <- as(Cencal_Season_city,"transactions")
+rules3 <- apriori(Cencal_Season_city_trans, 
+                  parameter=list(supp=0.0001, conf=0.1), 
+                  control=list(verbose=F),
+                  appearance=list(default="lhs",rhs=("city_data.IsCanceled=Canceled")))
+inspect(rules3)
+#City hotel has lower reservation cancellation rates in spring and winter, so hotels can reduce the deposit percentage
+#appropriately in these two seasons. For summer, when the cancellation rate is higher, city hotel should increase the 
+#deposit percentage appropriately.
+
+#resort hotel
+
+resort_data$VisitorType <- as.factor(resort_data$VisitorType)
+Cencal_Visitor_resort <- data.frame(resort_data$IsCanceled, resort_data$VisitorType)
+Cencal_Visitor_resort_trans <- as(Cencal_Visitor_resort,"transactions")
+rules4 <- apriori(Cencal_Visitor_resort_trans, 
+                  parameter=list(supp=0.005, conf=0.1), 
+                  control=list(verbose=F),
+                  appearance=list(default="lhs",rhs=("resort_data.IsCanceled=Canceled")))
+inspect(rules4)
+#For resort hotel, in addition to business travel, solo travelers also have a low cancellation rate for reservations. 
+#Therefore hotel can also charge a lower deposit for solo travelers.
+
+Cencal_Deposit_resort <- data.frame(resort_data$IsCanceled, resort_data$DepositType)
+Cencal_Deposit_resort_trans <- as(Cencal_Deposit_resort,"transactions")
+rules5 <- apriori(Cencal_Deposit_resort_trans, 
+                  parameter=list(supp=0.0001, conf=0.1), 
+                  control=list(verbose=F),
+                  appearance=list(default="lhs",rhs=("resort_data.IsCanceled=Canceled")))
+inspect(rules5)
+#like city hotel.
+
+Cencal_Season_resort <- data.frame(resort_data$IsCanceled, resort_data$Season)
+Cencal_Season_resort_trans <- as(Cencal_Season_resort,"transactions")
+rules6 <- apriori(Cencal_Season_resort_trans, 
+                  parameter=list(supp=0.0001, conf=0.1), 
+                  control=list(verbose=F),
+                  appearance=list(default="lhs",rhs=("resort_data.IsCanceled=Canceled")))
+inspect(rules6)
+#Similar to the City Hotel, the reservation cancellation rate is low in spring and winter. However, the difference is 
+#that resort hotel has the highest reservation cancellation rate in the fall, so the deposit percentage should be 
+#increased appropriately for resort hotel in the fall.
