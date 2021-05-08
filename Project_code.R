@@ -24,6 +24,8 @@ EnsurePackage("ggplot2")
 EnsurePackage("readxl")
 EnsurePackage("dplyr")
 EnsurePackage("gridExtra")
+EnsurePackage("ggmap")
+EnsurePackage("ggrepel")
 
 #################################### Reading in the Data #################
 
@@ -36,7 +38,7 @@ city_data <- read_excel("H2-City.xlsx")
 
 # colnames(resort_data)
 # colnames(city_data)
-
+"Group       "
 
 ########### Combining both dataset for better analysis.
 
@@ -85,13 +87,6 @@ cols_to_be_rectified <- names(combined_data)[vapply(combined_data, is.character,
 combined_data[,cols_to_be_rectified] <- lapply(combined_data[,cols_to_be_rectified], trimws)
 
 
-#Cleaning column ADR. Removing excess characters and converting into numeric.
-StringCleaner <- function(x) {
-  x <- as.numeric(gsub(" .*", "", x))
-  return(x)
-}
-combined_data$ADR <- StringCleaner(combined_data$ADR)
-
 
 ############ MAKING COLUMNS PROPER DATATYPE  #######
 
@@ -124,7 +119,7 @@ combined_data$HotelType <- as.factor(combined_data$HotelType)
 
 colSums(is.na(combined_data)) # Checking which columns have NA values.
 # Arrival date has 39270 missing values. 
-# we can get those values using ReservationStatusDate and StayinWeekNIghts and StayInWeekendNights where reservationstatus is checkout.
+# we can get those values using ReservationStatusDate and TotalNumberOfDaysStayedWeekNIghts and TotalNumberOfDaysStayedWeekendNights where reservationstatus is checkout.
 
 combined_data$ArrivalDate[which(is.na(combined_data$ArrivalDate) & combined_data$ReservationStatus == 'Check-Out')] <-
   combined_data$ReservationStatusDate - (combined_data$StaysInWeekendNights + combined_data$StaysInWeekNights)
@@ -255,6 +250,15 @@ length(which(combined_data$IsCanceled == "Not Canceled" & combined_data$Reservat
 # Summing up no of days stayed in Weekend and Weekdays
 combined_data$TotalNumberOfDaysStayed <- combined_data$StaysInWeekendNights + combined_data$StaysInWeekNights
 
+ggplot(data = combined_data) + geom_boxplot(mapping = aes(x = TotalNumberOfDaysStayed)) + coord_flip() # So many outliers.
+
+# Checking how many people stayed for more than 15 days.
+length(which(combined_data$TotalNumberOfDaysStayed > 14))  # 419 rows
+
+# We can remove these 419 rows since TotalNumberOfDaysStayedg at a hotel for a max of 2 weeks seems logical. 
+
+combined_data <- combined_data %>% filter(TotalNumberOfDaysStayed <15)
+
 # Checking how many rows have total number of days stayed as zero.
 length(which(combined_data$TotalNumberOfDaysStayed == 0))   # Does it make sense to have this as 0? I dont think so.
 
@@ -364,7 +368,6 @@ sort(table(combined_data$ADRType), decreasing = T)
 
 
 
-
 ########################## 
 
 
@@ -378,38 +381,122 @@ resort_data <- combined_data %>% dplyr::filter(HotelType == "resort")
 city_data <- combined_data %>% dplyr::filter(HotelType == "city")
 
 
-############### -------------- Histogram of Numerical Variables -------------#################################
+#######################---------- pieplots-----------#######################
+### Shubham Malpani
+
+
+#plot piechat for visitor type
+#View(combined_data)
+#View(visitortable)
+visitortable <- data.frame(table(combined_data$VisitorType))
+visitortable$percent <- round(visitortable$Freq/sum(visitortable$Freq) * 100,digits = 2)
+visitorplot <- ggplot(visitortable, aes(x="", y=Freq, fill=Var1)) +
+  geom_bar(stat="identity", width=1, color="white")  +
+  coord_polar("y", start=0) +
+  geom_label_repel(aes(label = percent), size=3, show.legend = F, nudge_x = 1) + guides(fill = guide_legend(title = "Visitor Type")) + 
+  theme_void()
+visitorplot
+
+#meal,visitortype,customertype,season,deposit#plot
+#plot piechart for mealplan
+mealplan <-  data.frame(table(combined_data$Meal))
+View(mealplan)
+mealplan$percent <- round(mealplan$Freq/sum(mealplan$Freq) * 100,digits = 2)
+mealplanplot <- ggplot(mealplan, aes(x="", y=Freq, fill=Var1)) +
+  geom_bar(stat="identity", width=1, color="white")  +
+  coord_polar("y", start=0) +geom_label_repel(aes(label = percent), size=3, show.legend = F, nudge_x = 1) + guides(fill = guide_legend(title = "Meal Plan"))+ theme_void()
+mealplanplot
+
+#plot piechart for customertype
+customertypeframe <-  data.frame(table(combined_data$CustomerType))
+View(customertypeframe)
+customertypeframe$percent <- round(customertypeframe$Freq/sum(customertypeframe$Freq) * 100,digits = 2)
+customertypeplot <- ggplot(customertypeframe, aes(x="", y=Freq, fill=Var1)) +
+  geom_bar(stat="identity", width=1, color="white")  +
+  coord_polar("y", start=0) +geom_label_repel(aes(label = percent), size=3, show.legend = F, nudge_x = 1) + guides(fill = guide_legend(title = "Customer Type"))+ theme_void()
+customertypeplot
+
+#plot piechart for season
+seasonframe <-  data.frame(table(combined_data$Season))
+View(seasonframe)
+seasonframe$percent <- round(seasonframe$Freq/sum(seasonframe$Freq) * 100,digits = 2)
+seasonframeplot <- ggplot(seasonframe, aes(x="", y=Freq, fill=Var1)) +
+  geom_bar(stat="identity", width=1, color="white")  +
+  coord_polar("y", start=0) +geom_label_repel(aes(label = percent), size=3, show.legend = F, nudge_x = 1) + guides(fill = guide_legend(title = "Season"))+ theme_void()
+seasonframeplot
+
+#plot piechart for deposit
+depositframe <-  data.frame(table(combined_data$DepositType))
+View(seasonframe)
+depositframe$percent <- round(depositframe$Freq/sum(depositframe$Freq) * 100,digits = 2)
+depositframeplot <- ggplot(depositframe, aes(x="", y=Freq, fill=Var1)) +
+  geom_bar(stat="identity", width=1,color = "white")  +
+  coord_polar("y", start=0) +geom_label_repel(aes(label = percent), size=3, show.legend = F, nudge_x = 1) + guides(fill = guide_legend(title = "Deposit Status"))+ theme_void()
+depositframeplot
 
 
 
-dplyr::select_if(combined_data, is.numeric)
-# Lead Time , DaysInWaitingList, TotalNumberofDaysStayed
 
 
 
-
-# 1. Visualizing range of ADR by number of Adults and Hotel Type
-
-resort_plot <- ggplot(data = resort_data, aes(x = Adults, y = ADR)) + geom_point(color = "red") +
-  coord_cartesian(xlim=c(1,4)) + scale_x_continuous(breaks = seq(1,4,1)) + xlab("Number of adults") + 
-  ggtitle("Resort")
-
-city_plot <- ggplot(data = city_data, aes(x = Adults, y = ADR)) + geom_point(color = "blue") +
-  coord_cartesian(xlim=c(1,4)) + scale_x_continuous(breaks = seq(1,4,1)) + xlab("Number of adults") +
-  ggtitle("City")
-
-grid.arrange(resort_plot, city_plot, ncol = 2)
+############### -------------- Histogram, Barcharts and Boxplots -------------#################################
 
 
+######################-------------------- Plot 1 - Analyzing ADR by type of visitors and season for resort and City --------------- ##########################
 
-# 2 Season_VisitorType_ADR
+### RESORT
+# Grouping by visitortype and season. Once you see the dataframe, it will be clear what I did using the below command. 
+Season_VisitorType_ADR_resort <- resort_data %>% group_by(VisitorType, Season) %>% summarise(mean_ADR = mean(ADR)) 
+View(Season_VisitorType_ADR_resort)
 
-Season_VisitorType_ADR <- data.frame(aggregate(addition3$ADR, 
-                                               by=list(type=addition3$VisitorType,type=addition3$Season),mean))
-colnames(Season_VisitorType_ADR) <- c("VisitorType","Season","mean_ADR")
-b1 <- ggplot(data=Season_VisitorType_ADR, mapping=aes(x = Season, y = mean_ADR, fill=VisitorType))+
-  geom_bar(stat="identity",position=position_dodge(0.75),width=0.6)
-b1
+#Creating plot
+Season_VisitorType_ADR_resort_plot <-
+  ggplot(data = Season_VisitorType_ADR_resort,
+         mapping = aes(x = Season, y = mean_ADR, fill = VisitorType)) +
+  geom_bar(stat = "identity",
+           position = position_dodge(0.75),
+           width = 0.6) +
+  theme_bw() +
+  scale_fill_brewer(palette = "Reds") +
+  theme(axis.title.x = element_text(size = 15), axis.title.y = element_text(size = 15), legend.title = element_text(size = 15)) +
+  labs(title = "Resort",
+       x = "Season",
+       y = "Average Daily Rate (in Euros)",
+       fill = "Type of Visitor") +
+  scale_y_continuous(breaks = seq(0,200,25))
+
+#Plotting figure
+Season_VisitorType_ADR_resort_plot
+
+
+###### CITY
+Season_VisitorType_ADR_city <- city_data %>% group_by(VisitorType, Season) %>% summarise(mean_ADR = mean(ADR)) 
+View(Season_VisitorType_ADR_city)
+
+#Creating plot
+Season_VisitorType_ADR_city_plot <-
+  ggplot(data = Season_VisitorType_ADR_city,
+         mapping = aes(x = Season, y = mean_ADR, fill = VisitorType)) +
+  geom_bar(stat = "identity",
+           position = position_dodge(0.75),
+           width = 0.6) +
+  theme_bw() +
+  scale_fill_brewer(palette = "Reds") +
+  theme(axis.title.x = element_text(size = 15), axis.title.y = element_text(size = 15), legend.title = element_text(size = 15)) +
+  labs(title = "City",
+       x = "Season",
+       y = "Average Daily Rate (in Euros)",
+       fill = "Type of Visitor") +
+  scale_y_continuous(breaks = seq(0,200,25))
+
+#Plotting figure
+Season_VisitorType_ADR_city_plot
+
+
+# Creating both plots in same figure
+grid.arrange(Season_VisitorType_ADR_resort_plot, Season_VisitorType_ADR_city_plot, nrow = 2)
+
+####### WRITE THE BELOW INTERPRETATION AGAIN!!!
 
 # ADR for visitor types of families is the highest regardless of the season, so offering discounts for 
 ###families to attract more family travelers, especially in the summer, is a good way to increase overall ADR.
@@ -417,14 +504,77 @@ b1
 ###couples in the spring and higher for singles in the summer. Therefore, we should make it a secondary 
 ###priority to attract couple type visitors to stay in spring, and try to attract more single visitors in summer.
 
-#3 Season_StayIn_ADR
+################------------------Plot 1 ends-----------------------#########################################
 
-Season_StayIn_ADR <- data.frame(aggregate(addition3$ADR, 
-                                          by=list(type=addition3$StayIn,type=addition3$Season),mean))
-colnames(Season_StayIn_ADR) <- c("StayIn","Season","mean_ADR")
-b2 <- ggplot(data=Season_StayIn_ADR, mapping=aes(x = StayIn, y = mean_ADR, color=Season))+
-  geom_line()
-b2
+
+
+############## ----------  Plot 2 - # Does booking earlier mean more cancelations? - Lead Time vs IsCancelled ------- #########
+
+ggplot(data = combined_data, aes(x = HotelType, y = LeadTime, fill = IsCanceled)) + 
+  geom_boxplot(position = position_dodge()) + 
+  scale_fill_brewer(palette = "Reds") +
+  labs(title = "Does booking earlier mean more Cancelation?",
+       x = "Type of Hotel",
+       y = "How many days before the booking was made?",
+       fill = "Cancelation Rate") + 
+  theme_bw() +
+  theme(axis.title.x = element_text(size = 13), axis.title.y = element_text(size = 13), legend.title = element_text(size = 13)) +
+  scale_y_continuous(breaks = seq(0,600,40))
+
+
+########## --------------- Plot 2 ends -----------------#############
+
+
+
+######## ------------- Plot 3 Season_TotalNumberOfDaysStayed_ADR ------------ #############################
+
+
+## RESORT
+Season_TotalNumberOfDaysStayed_ADR_resort <- resort_data %>% group_by(Season, TotalNumberOfDaysStayed) %>% summarise(mean_ADR = mean(ADR))
+View(Season_TotalNumberOfDaysStayed_ADR_resort)
+
+Season_TotalNumberOfDaysStayed_ADR_resort_plot <-
+  ggplot(
+    data = Season_TotalNumberOfDaysStayed_ADR_resort,
+    mapping = aes(x = TotalNumberOfDaysStayed, y = mean_ADR, color = Season)
+  ) +
+  geom_line(size = 1.3) +
+  labs(title = "How does number of days stayed affect Price per night in Resort hotels",
+       x = "Total number of days stayed",
+       y = "Average Daily Rate (in Euros)",
+       fill = "Season") + 
+  theme_bw() +
+  theme(axis.title.x = element_text(size = 13), axis.title.y = element_text(size = 13), legend.title = element_text(size = 13)) +
+  scale_x_continuous(breaks = seq(0,15,1)) + 
+  scale_y_continuous(breaks = seq(0,200,10)) 
+
+Season_TotalNumberOfDaysStayed_ADR_resort_plot
+
+
+#CITY
+## RESORT
+Season_TotalNumberOfDaysStayed_ADR_city <- city_data %>% group_by(Season, TotalNumberOfDaysStayed) %>% summarise(mean_ADR = mean(ADR))
+View(Season_TotalNumberOfDaysStayed_ADR_city)
+
+Season_TotalNumberOfDaysStayed_ADR_city_plot <-
+  ggplot(
+    data = Season_TotalNumberOfDaysStayed_ADR_city,
+    mapping = aes(x = TotalNumberOfDaysStayed, y = mean_ADR, color = Season)
+  ) +
+  geom_line(size = 1.3) +
+  labs(title = "How does number of days stayed affect Price per night in city hotels",
+       x = "Total number of days stayed",
+       y = "Average Daily Rate (in Euros)",
+       fill = "Season") + 
+  theme_bw() +
+  theme(axis.title.x = element_text(size = 13), axis.title.y = element_text(size = 13), legend.title = element_text(size = 13)) +
+  scale_x_continuous(breaks = seq(0,15,1)) + 
+  scale_y_continuous(breaks = seq(80,200,10)) 
+
+Season_TotalNumberOfDaysStayed_ADR_city_plot
+
+
+#### WRITE THE BELOW INTERPRETATION AGAIN!!!
 
 # In spring, ADR is highest for stays around 20 days and lower for stays around 16 or 17 days and after 23 
 ###days. Therefore, visitors with stays around 16 or 17 days, or greater than 23 days should be enticed to
@@ -440,10 +590,114 @@ b2
 
 
 
+############## ------------- Plot 3 ends ------------------ ##############################
 
 
 
-#########################################################################################
+################### ------------------- Plot 4 - Which hotel type had a better ADR? City or resort? -------------- ###################
+
+
+mean_stats_hotelType <- combined_data %>% group_by(HotelType) %>% summarise(mean = mean(ADR),count = n())
+
+# create the plot
+ggplot(data = combined_data, aes(x = ADR)) + geom_histogram(color = "black", aes(fill = ..count..), binwidth = 10) +
+  facet_grid(HotelType ~ .) + scale_x_continuous(breaks = seq(0,500,50)) +
+  scale_fill_gradient("Count", low="orange", high="red") + 
+  geom_vline(data = mean_stats_hotelType, aes(xintercept = mean, color = HotelType), size = 1) + 
+  theme_bw() +
+  labs(title = "Distribution of ADR for each type of Hotel",
+       x = "Average Daily Rate (in Euros)",
+       y = "Count") + 
+  theme(axis.title.x = element_text(size = 13), axis.title.y = element_text(size = 13), legend.title = element_text(size = 13)) 
+
+
+################### ------------------- Plot 4 ends -------------- ###################
+
+
+
+################### ------------------- Plot 5 - Which Hotel had more cancelations? - Resort or City?  -------------- ###################
+
+
+IsCanceled_HotelType <- combined_data %>% group_by(HotelType, IsCanceled) %>% summarise(count = n())
+
+ggplot(data = IsCanceled_HotelType, aes(x = HotelType, fill = IsCanceled, y = count)) + 
+  geom_bar(stat = "identity",
+           position = position_dodge(0.75),
+           width = 0.6) +
+  theme_bw() +
+  scale_fill_brewer(palette = "Reds") +
+  theme(axis.title.x = element_text(size = 15), axis.title.y = element_text(size = 15), legend.title = element_text(size = 15)) +
+  labs(title = "Cancelation Rate Hotel Wise",
+       x = "Type of Hotel",
+       y = "Count",
+       fill = "Cancelation Status") +
+  scale_y_continuous(breaks = seq(0,50000,5000))
+
+
+# Ratio of cancelation in city Hotel is higher. 
+
+
+################### ------------------- Plot 5 ends -------------- ###################
+
+
+
+
+
+##################### ---------------- MAP PLOT ------------------ #########################################
+#########-----  Hanwen -------##########
+# Map —— Number Of Reservations From Different Countries
+Country_city <- city_data[-which(city_data$Country=="NULL"),]
+table(Country_city$Country)
+Country_city <- data.frame(table(Country_city$Country))
+Country_city$Var1 <- as.character(Country_city$Var1)
+colnames(Country_city) <- c("Country","NumberOfReservation")
+world <- map_data('world')
+library(countrycode)
+Country_city$Country[which(Country_city$Country=="CN")] <- "CHN"
+Country_city$Country[which(Country_city$Country=="TMP")] <- "TLS"
+Country_city$Country_Name <- countrycode(Country_city$Country,"iso3c","country.name")
+Country_city$Country_Name[which(Country_city$Country=="USA")] <- "USA"
+dfNew_city <- merge(world, Country_city, all.x=TRUE, by.x="region", by.y="Country_Name")
+dfNew_city <- dfNew_city[order(dfNew_city[,5]),]
+mp_city <- ggplot(dfNew_city, aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill= NumberOfReservation), colour = "white") +
+  scale_x_continuous(breaks = seq(-180, 210, 45), labels = function(x){paste0(x, "°")}) +
+  scale_y_continuous(breaks = seq(-60, 100, 30), labels = function(x){paste0(x, "°")}) +
+  scale_fill_gradient(low = "blue", high="red") +
+  labs(title="Number Of Reservations From Different Countries",
+       y="Latitude", x="Longitude") +
+  theme_light() 
+mp_city
+
+Country_resort <- resort_data[-which(resort_data$Country=="NULL"),]
+table(Country_resort$Country)
+Country_resort <- data.frame(table(Country_resort$Country))
+Country_resort$Var1 <- as.character(Country_resort$Var1)
+colnames(Country_resort) <- c("Country","NumberOfReservation")
+world <- map_data('world')
+library(countrycode)
+Country_resort$Country[which(Country_resort$Country=="CN")] <- "CHN"
+Country_resort$Country[which(Country_resort$Country=="TMP")] <- "TLS"
+Country_resort$Country_Name <- countrycode(Country_resort$Country,"iso3c","country.name")
+Country_resort$Country_Name[which(Country_resort$Country=="USA")] <- "USA"
+dfNew_resort <- merge(world, Country_resort, all.x=TRUE, by.x="region", by.y="Country_Name")
+dfNew_resort <- dfNew_resort[order(dfNew_resort[,5]),]
+mp_resort <- ggplot(dfNew_resort, aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill= NumberOfReservation), colour = "white") +
+  scale_x_continuous(breaks = seq(-180, 210, 45), labels = function(x){paste0(x, "°")}) +
+  scale_y_continuous(breaks = seq(-60, 100, 30), labels = function(x){paste0(x, "°")}) +
+  scale_fill_gradient(low = "blue", high="red") +
+  labs(title="Number Of Reservations From Different Countries",
+       y="Latitude", x="Longitude") +
+  theme_light() + coord_cartesian()
+mp_resort
+##################################################################################
+
+
+
+
+
+#####################------------------ NOT SO USEFUL PLOTS (IGNORE)   ----------- ####################################################################
 
 ###### Multiple Histograms from Grouped Data   ###############
 # https://r-graphics.org/recipe-distribution-multi-hist
@@ -457,11 +711,13 @@ mean_stats_season_wise <- resort_data %>% group_by(Season) %>% summarise(mean = 
 # create the plot
 ggplot(data = resort_data, aes(x = ADR)) + geom_histogram(color = "black", aes(fill = ..count..), binwidth = 10) +
   facet_grid(Season ~ .) + scale_x_continuous(breaks = seq(0,400,40)) +
-  scale_fill_gradient("Count", low="green", high="red") + 
-  geom_vline(data = mean_stats_season_wise, aes(xintercept = mean, color = Season), size = 1)
+  #  scale_fill_gradient("Count", low="green", high="red") + 
+  geom_vline(data = mean_stats_season_wise, aes(xintercept = mean, color = Season), size = 1) + 
+  theme_grey()
 
 
 # Fall season, ADR is high as compared to other seasons. 
+# maybe, we can think of something that will increase ADR in spring season and winter season. 
 
 
 #2. Analyzing ADR based on VisitorType (Seeing the distribution and Mean(ADR) season wise) ###################
@@ -475,265 +731,4 @@ ggplot(data = resort_data, aes(x = ADR)) + geom_histogram(color = "black", aes(f
   facet_grid(VisitorType ~ .) + scale_x_continuous(breaks = seq(0,400,40)) +
   scale_fill_gradient("Count", low="green", high="red") + 
   geom_vline(data = mean_stats_VisitorType_wise, aes(xintercept = mean, color = VisitorType), size = 1)
-
-
-# 3. Analyzing ADR and customer type 
-
-ggplot(data = resort_data, aes(x = ADR)) + geom_histogram(color = "black", aes(fill = ..count..), binwidth = 10) +
-  facet_grid(CustomerType ~ .) + scale_x_continuous(breaks = seq(0,400,40)) +
-  scale_fill_gradient("Count", low="green", high="red")
-
-# 4. Analyzing ADR and deposit type 
-
-ggplot(data = resort_data, aes(x = ADR)) + geom_histogram(color = "black", aes(fill = ..count..), binwidth = 10) +
-  facet_grid(DepositType ~ .) + scale_x_continuous(breaks = seq(0,400,40)) +
-  scale_fill_gradient("Count", low="green", high="red")
-
-
-
-
-
-
-
-
-#########################################################################################
-
-
-
-
-
-
-########################## Boxplots  #####################
-
-##################### 1. Deposit Type and ADR ####################################
-
-#Basic plot with outliers in magenta color. 
-ADR_DepositType_Boxplot <- ggplot(data = resort_data) + aes(x = DepositType, y = ADR, group = DepositType) + 
-  geom_boxplot(outlier.colour="magenta")
-ADR_DepositType_Boxplot
-
-
-#Adding color to boxes 
-ADR_DepositType_Boxplot <-  ADR_DepositType_Boxplot + 
-  aes(color = DepositType) 
-ADR_DepositType_Boxplot
-
-# Writing count and mean of datapoints for all categories. (https://gscheithauer.medium.com/how-to-add-number-of-observations-to-a-ggplot2-boxplot-b22710f7ef80)
-
-stat_box_data <- function(y, upper_limit = max(resort_data$ADR) * 1.15) {
-  return( 
-    data.frame(
-      y = 0.95 * upper_limit,
-      label = paste('count =', length(y), '\n',
-                    'mean =', round(mean(y), 1), '\n')
-    )
-  )
-}
-
-ADR_DepositType_Boxplot <- ADR_DepositType_Boxplot + 
-  stat_summary(
-    fun.data = stat_box_data, 
-    geom = "text", 
-    hjust = 0.5,
-    vjust = 0.9
-  )
-
-#Another way to see the density of data points - Box plot displaying the data points to see for which category we have more data
-ADR_DepositType_Boxplot <- 
-  ADR_DepositType_Boxplot + geom_jitter(shape=16, position=position_jitter(0.2))
-
-ADR_DepositType_Boxplot    # FINAL BOXPLOT
-
-
-
-####################### Meal and ADR #####################################
-
-
-#Basic plot with outliers in magenta color. 
-ADR_Meal_Boxplot <- ggplot(data = resort_data) + aes(x = Meal, y = ADR, group = Meal) + 
-  geom_boxplot(outlier.colour="black")
-ADR_Meal_Boxplot
-
-
-#Adding color to boxes 
-ADR_Meal_Boxplot <-  ADR_Meal_Boxplot + 
-  aes(color = Meal) 
-ADR_Meal_Boxplot
-
-# Writing count and mean of datapoints for all categories. (https://gscheithauer.medium.com/how-to-add-number-of-observations-to-a-ggplot2-boxplot-b22710f7ef80)
-
-stat_box_data <- function(y, upper_limit = max(resort_data$ADR) * 1.15) {
-  return( 
-    data.frame(
-      y = 0.95 * upper_limit,
-      label = paste('count =', length(y), '\n',
-                    'mean =', round(mean(y), 1), '\n')
-    )
-  )
-}
-
-ADR_Meal_Boxplot <- ADR_Meal_Boxplot + 
-  stat_summary(
-    fun.data = stat_box_data, 
-    geom = "text", 
-    hjust = 0.5,
-    vjust = 0.9
-  )
-ADR_Meal_Boxplot
-
-#Another way to see the density of data points - Box plot displaying the data points to see for which category we have more data
-ADR_Meal_Boxplot <- 
-  ADR_Meal_Boxplot + geom_jitter(shape=16, position=position_jitter(0.2))
-
-# Changing X-axis labels to make it more clearer.
-ADR_Meal_Boxplot <- 
-  ADR_Meal_Boxplot + scale_x_discrete(labels = c("BB" = "Bed & Breakfast", "FB" = "Full Board", "HB" = "Half Board"))
-
-ADR_Meal_Boxplot     # FINAL BOXPLOT
-
-# CAN WE REMOVE SC because of less data points or can we combine SC and Undefined into one column??????????????
-
-
-# ##########################################################################
-# #ADR and adults.
-# # with(resort_data, boxplot(ADR ~ Adults))
-# 
-# summary(resort_data$Adults)
-# 
-# #Basic plot (group = Adults is important to get different number of adults on x-axis.)
-# ADR_Adults_Boxplot <- ggplot(data = resort_data) + aes(x = Adults, y = ADR, group = Adults) + 
-#   geom_boxplot()
-# 
-# #Limiting the number of adults to 4.
-# ADR_Adults_Boxplot + xlim("0", "1")
-# 
-# 
-# 
-# 
-# # Countries and ADR
-# 
-# table(resort_data$Country)  # Getting the count of Country Values to figure out which countries to analyze. 
-# # mean(table(resort_data$Country))
-# 
-# length(which(table(resort_data$Country) > 100)) # Checking how many countries have data points greater than 100 and using only those in the boxplot.
-# 
-# ADR_Country_Boxplot <- ggplot(data = resort_data) + aes(x = Country, y = ADR, group = Country) + 
-#   geom_boxplot()
-# 
-# ADR_Country_Boxplot
-# 
-# 
-# 
-# # IsRepeatedGuest and ADR
-# 
-# #Basic plot
-# ADR_IsRepeatedGuest_Boxplot <- ggplot(data = resort_data) + aes(x = IsRepeatedGuest, y = ADR, group = IsRepeatedGuest) + 
-#   geom_boxplot()
-#  
-# ADR_IsRepeatedGuest_Boxplot
-
-#################################################################################################################################
-
-
-######################## PLOTTING MAP FOR COUNTRY DATA ###########################
-
-#### NEED TO REFINE THIS. JUST A RAW IDEA OF HOW WE CAN DO THIS. ###############
-
-# I think, first we need to convert country codes to full names and get the latitude and longitude for that and then 
-# we can plot a jitter plot showing each occurence of a country as a point on the map. That way we will know from which country most of our visitors
-# come from.
-
-# (https://stackoverflow.com/questions/26818257/how-to-convert-country-codes-into-country-names-in-a-column-within-a-data-frame)
-
-EnsurePackage("countrycode")
-
-# There are different formats. Ours is ISO3 (https://unstats.un.org/unsd/tradekb/knowledgebase/country-code)
-
-?countrycode
-?codelist
-
-resort_data$countryFullName <- countrycode(resort_data$Country, "iso3c", "country.name")
-sort(table(resort_data$countryFullName))
-
-colSums(is.na(resort_data))
-# BUt using this, we get some NA values. Need to think how to deal with them. Gotta deal with United States as well. 
-
-# Now, we have got country names, we need to get central coordinates of those country names. 
-
-EnsurePackage("rgeos")
-EnsurePackage("rworldmap")
-
-# get world map
-wmap <- getMap(resolution="high")
-
-# get centroids
-centroids <- gCentroid(wmap, byid=TRUE)
-
-# get a data.frame with centroids
-df <- as.data.frame(centroids)
-# df$Country <- rownames(df)  # Converting rownames to a column. 
-head(df)
-
-
-# To be continued - how to match two dataframes based on values???????  -> Can use match() function.
-# https://stackoverflow.com/questions/21712384/updating-column-in-one-dataframe-with-value-from-another-dataframe-based-on-matc
-
-
-resort_data$Countrylat <- df[match(resort_data$countryFullName, rownames(df)),"y"]
-resort_data$Countrylon <- df[match(resort_data$countryFullName, rownames(df)),"x"]
-
-# Again, more NA values. 
-
-
-mp <- NULL
-mapWorld <- borders("world", colour="gray50", fill="gray50") # create a layer of borders
-mp <- ggplot() +   mapWorld
-
-#Now Layer the countries on top
-mp <- mp+ geom_point(aes(x=resort_data$Countrylon, y=resort_data$Countrylat) ,color="blue", size=1) 
-mp + coord_map()
-
-
-
-##################################################################################
-
-# Bar charts - 
-
-# We will have to reshape data to create side by side bar charts. Using tidyr, we can do that. pivot_longer() and pivot_wider() functions. 
-
-EnsurePackage("ggthemes")
-
-length(resort_data$IsCanceled)
-
-# IsCancelled and DepositType
-
-
-# IsCancelled and CustomerType
-
-
-
-
-
-
-
-
-#  We can plot how many hotels were canceled for 2015, 2016, 2017
-
-
-str(resort_data)
-
-resort_data$Canceled <- ifelse(resort_data$IsCanceled == 1, "Canceled", "Not Canceled")
-
-ggplot(data = resort_data, aes(x = Season, y = ADR, fill = Canceled)) +
-  geom_bar(position = "dodge", stat = "identity")
-
-
-ggplot(data = resort_data, aes(x = Season, y = ADR, fill = IsRepeatedGuest)) +
-  geom_bar(position = "dodge", stat = "identity")
-
-
-resort_data$ADR[which(resort_data$ADR <= 0)]
-
-
-
 
