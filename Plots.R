@@ -11,65 +11,140 @@ resort_data <- combined_data %>% dplyr::filter(HotelType == "resort")
 city_data <- combined_data %>% dplyr::filter(HotelType == "city")
 
 
-#######################---------- pieplots-----------#######################
-### Shubham Malpani
+#######################---------- Basic Plots-----------#######################
+
+#plot piechat for visitor type and Season. Plot barplots for other categorical columns. 
 
 
-#plot piechat for visitor type
-#View(combined_data)
-#View(visitortable)
-visitortable <- data.frame(table(combined_data$VisitorType))
-visitortable$percent <- round(visitortable$Freq/sum(visitortable$Freq) * 100,digits = 2)
-visitorplot <- ggplot(visitortable, aes(x="", y=Freq, fill=Var1)) +
-  geom_bar(stat="identity", width=1, color="white")  +
-  coord_polar("y", start=0) +
-  geom_label_repel(aes(label = percent), size=3, show.legend = F, nudge_x = 1) + guides(fill = guide_legend(title = "Visitor Type")) + 
-  theme_void()
-visitorplot
+blank_theme <- theme_minimal()+
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.border = element_blank(),
+    panel.grid=element_blank(),
+    axis.ticks = element_blank(),
+    plot.title=element_text(size=13, face="bold"),
+    legend.title=element_text(size=13, face="bold")
+  )
 
-#meal,visitortype,customertype,season,deposit#plot
-#plot piechart for mealplan
-mealplan <-  data.frame(table(combined_data$Meal))
-View(mealplan)
-mealplan$percent <- round(mealplan$Freq/sum(mealplan$Freq) * 100,digits = 2)
-mealplanplot <- ggplot(mealplan, aes(x="", y=Freq, fill=Var1)) +
-  geom_bar(stat="identity", width=1, color="white")  +
-  coord_polar("y", start=0) +geom_label_repel(aes(label = percent), size=3, show.legend = F, nudge_x = 1) + guides(fill = guide_legend(title = "Meal Plan"))+ theme_void()
-mealplanplot
+# Visitor Type   ( This is fine!!)
+combined_VisitorType_count <- combined_data %>% group_by(VisitorType) %>% summarise(count = n())
 
-#plot piechart for customertype
-customertypeframe <-  data.frame(table(combined_data$CustomerType))
-View(customertypeframe)
-customertypeframe$percent <- round(customertypeframe$Freq/sum(customertypeframe$Freq) * 100,digits = 2)
-customertypeplot <- ggplot(customertypeframe, aes(x="", y=Freq, fill=Var1)) +
-  geom_bar(stat="identity", width=1, color="white")  +
-  coord_polar("y", start=0) +geom_label_repel(aes(label = percent), size=3, show.legend = F, nudge_x = 1) + guides(fill = guide_legend(title = "Customer Type"))+ theme_void()
-customertypeplot
+ggplot(data = combined_VisitorType_count, aes(x ="", y = count, fill = VisitorType)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start = 0) +
+  scale_fill_brewer(palette = "Blues") +
+  blank_theme +
+  theme(axis.text.x=element_blank()) +
+  ggtitle("Percentage of Type of Visitors") +
+  geom_text(aes(x = 1.7, label = paste0(round((count/sum(count) * 100),1), "%")), position = position_stack(vjust = 0.5)) 
 
-#plot piechart for season
-seasonframe <-  data.frame(table(combined_data$Season))
-View(seasonframe)
-seasonframe$percent <- round(seasonframe$Freq/sum(seasonframe$Freq) * 100,digits = 2)
-seasonframeplot <- ggplot(seasonframe, aes(x="", y=Freq, fill=Var1)) +
-  geom_bar(stat="identity", width=1, color="white")  +
-  coord_polar("y", start=0) +geom_label_repel(aes(label = percent), size=3, show.legend = F, nudge_x = 1) + guides(fill = guide_legend(title = "Season"))+ theme_void()
-seasonframeplot
 
-#plot piechart for deposit
-depositframe <-  data.frame(table(combined_data$DepositType))
-View(seasonframe)
-depositframe$percent <- round(depositframe$Freq/sum(depositframe$Freq) * 100,digits = 2)
-depositframeplot <- ggplot(depositframe, aes(x="", y=Freq, fill=Var1)) +
-  geom_bar(stat="identity", width=1,color = "white")  +
-  coord_polar("y", start=0) +geom_label_repel(aes(label = percent), size=3, show.legend = F, nudge_x = 1) + guides(fill = guide_legend(title = "Deposit Status"))+ theme_void()
-depositframeplot
+# Season   ( This is fine!!)
+combined_Season_count <- combined_data %>% group_by(Season) %>% summarise(count = n())
+
+ggplot(data = combined_Season_count, aes(x ="", y = count, fill = Season)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start = 0) +
+  scale_fill_brewer(palette = "Blues") +
+  blank_theme +
+  theme(axis.text.x=element_blank()) +
+  ggtitle("Percentage of Visitors by Season") +
+  geom_text(aes(x = 1.7, label = paste0(round((count/sum(count) * 100),1), "%")), position = position_stack(vjust = 0.5)) 
 
 
 
+# Market Segment   (Draw a barchart showing % on y-axis, Pi chart not looking good)
+combined_MarketSegment_count <- combined_data %>% group_by(MarketSegment) %>% summarise(count = n()) %>%  mutate(pct = count/sum(count))
 
 
+ggplot(combined_MarketSegment_count, aes(MarketSegment, pct, fill = MarketSegment)) + 
+  geom_bar(stat='identity') + 
+  #geom_text(aes(label=scales::percent(pct)), position = position_stack(vjust = 1.1))+
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_brewer(palette = "Blues") +
+  theme(legend.position = "None",
+        axis.title.x = element_text(size = 15),
+        legend.title = element_text(size = 15),
+        axis.text.x = element_text(angle = 90, face = "bold")) +
+  labs(title = "Percentage wise Market Segment", x = "Market Segment", y = "Percentage")
 
-############### -------------- Histogram, Barcharts and Boxplots -------------#################################
+
+# Customer type
+combined_CustomerType_count <- combined_data %>% group_by(CustomerType) %>% summarise(count = n()) %>%  mutate(pct = count/sum(count))
+
+
+ggplot(combined_CustomerType_count, aes(CustomerType, pct, fill = CustomerType)) + 
+  geom_bar(stat='identity') + 
+  #geom_text(aes(label=scales::percent(pct)), position = position_stack(vjust = 1.1))+
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_brewer(palette = "Blues") +
+  theme(legend.position = "None",
+        axis.title.x = element_text(size = 15),
+        legend.title = element_text(size = 15)) +
+  labs(title = "Percentage wise Type of Customers", x = "Market Segment", y = "Percentage")
+
+
+# Deposit Type
+combined_DepositType_count <- combined_data %>% group_by(DepositType) %>% summarise(count = n()) %>%  mutate(pct = count/sum(count))
+
+
+ggplot(combined_DepositType_count, aes(DepositType, pct, fill = DepositType)) + 
+  geom_bar(stat='identity') + 
+  #geom_text(aes(label=scales::percent(pct)), position = position_stack(vjust = 1.1))+
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_brewer(palette = "Blues") +
+  theme(legend.position = "None",
+        axis.title.x = element_text(size = 15),
+        legend.title = element_text(size = 15)) +
+  labs(title = "Percentage wise Type of Deposits", x = "Market Segment", y = "Percentage")
+
+# Distribution Channel
+combined_DistributionChannel_count <- combined_data %>% group_by(DistributionChannel) %>% summarise(count = n()) %>%  mutate(pct = count/sum(count))
+
+
+ggplot(combined_DistributionChannel_count, aes(DistributionChannel, pct, fill = DistributionChannel)) + 
+  geom_bar(stat='identity') + 
+  #geom_text(aes(label=scales::percent(pct)), position = position_stack(vjust = 1.1))+
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_brewer(palette = "Blues") +
+  theme(legend.position = "None",
+        axis.title.x = element_text(size = 15),
+        legend.title = element_text(size = 15)) +
+  labs(title = "Percentage wise Distribution Channel", x = "Market Segment", y = "Percentage")
+
+
+# MealType
+combined_MealType_count <- combined_data %>% group_by(Meal) %>% summarise(count = n()) %>%  mutate(pct = count/sum(count))
+combined_MealType_count$Meal <- factor(combined_MealType_count$Meal, levels=c("BB", "FB", "HB", "SC"), labels=c("Bed & Breakfast", "Full Board", "Half-Board","Not Known"))
+
+
+ggplot(combined_MealType_count, aes(Meal, pct, fill = Meal)) + 
+  geom_bar(stat='identity') + 
+  #geom_text(aes(label=scales::percent(pct)), position = position_stack(vjust = 1.1))+
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_brewer(palette = "Blues") +
+  theme(legend.position = "None",
+        axis.title.x = element_text(size = 15),
+        legend.title = element_text(size = 15),
+        axis.text.x = element_text(angle = 90, face = "bold")) +
+  labs(title = "Percentage wise Meal Preference", x = "Market Segment", y = "Percentage") 
+
+# Reservation Status
+combined_ReservationStatus_count <- combined_data %>% group_by(ReservationStatus) %>% summarise(count = n()) %>%  mutate(pct = count/sum(count))
+
+ggplot(combined_ReservationStatus_count, aes(ReservationStatus, pct, fill = ReservationStatus)) + 
+  geom_bar(stat='identity') + 
+  #geom_text(aes(label=scales::percent(pct)), position = position_stack(vjust = 1.1))+
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_brewer(palette = "Blues") +
+  theme(legend.position = "None",
+        axis.title.x = element_text(size = 15),
+        legend.title = element_text(size = 15)) +
+  labs(title = "Percentage wise Reservation Status", x = "Market Segment", y = "Percentage") 
+
+
+############### -------------- Complex Plots -------------#################################
 
 
 ######################-------------------- Plot 1 - Analyzing ADR by type of visitors and season for resort and City --------------- ##########################

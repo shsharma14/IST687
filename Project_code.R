@@ -1,11 +1,5 @@
 
-# RESPONSE/DEPENDENT/OUTCOME Variable - ADR
-# CATEGORICAL COLUMNS (By Default) - ReservationStatus, Meal, Country, MarketSegment, DistributionChannel, ReservedRoomType, AssignedRoomType, DepositType, 
-# CustomerType
-# Numerical Columns - Lead Time, StaysInWeekendNights, StaysInWeekNights, Adults, Children, Babies, PreviousCancellations, PreviousBookingsNotCanceled, BookingChanges,
-# BookingChanges, DaysInWaitingList, ADR, RequiredCarParkingSpaces, TotalOfSpecialRequests
-# Date Columns - Arrival.Date, ReservationStatusDate
-# Ambiguous Columms - Agent (is a character column containing agent IDs), Company
+
 
 
 cat('\014')
@@ -28,6 +22,9 @@ EnsurePackage("ggmap")
 EnsurePackage("ggrepel")
 EnsurePackage("scales")
 EnsurePackage("patchwork")
+EnsurePackage("arules")
+EnsurePackage("arulesViz")
+EnsurePackage("lubridate")
 
 #################################### Reading in the Data #################
 
@@ -40,7 +37,7 @@ city_data <- read_excel("H2-City.xlsx")
 
 # colnames(resort_data)
 # colnames(city_data)
-"Group       "
+
 
 ########### Combining both dataset for better analysis.
 
@@ -90,7 +87,54 @@ combined_data[,cols_to_be_rectified] <- lapply(combined_data[,cols_to_be_rectifi
 
 
 
-############ MAKING COLUMNS PROPER DATATYPE  #######
+############ Tables for variables. #################
+str(combined_data)
+
+sort(table(combined_data$IsCanceled), decreasing = T)
+
+sort(table(combined_data$ReservationStatus), decreasing = T)
+# Remove that one row containing '`` in Reservation Status
+combined_data <- combined_data %>% filter(ReservationStatus != "`")
+
+
+sort(table(combined_data$StaysInWeekendNights), decreasing = T)
+sort(table(combined_data$StaysInWeekNights), decreasing = T)
+sort(table(combined_data$Adults), decreasing = T)
+sort(table(combined_data$Children), decreasing = T)
+sort(table(combined_data$Babies), decreasing = T)
+
+sort(table(combined_data$Meal), decreasing = T)
+## Meal Type Undefined and SC are same. Will rename Undefined as SC.
+combined_data$Meal[which(combined_data$Meal == "Undefined")] <- "SC"
+
+
+sort(table(combined_data$Country), decreasing = T)
+sort(table(combined_data$MarketSegment), decreasing = T)
+# Removing 2 undefined rows for Market Segment - 
+combined_data <- combined_data %>% filter(MarketSegment != "Undefined")
+
+sort(table(combined_data$DistributionChannel), decreasing = T)
+# Removing that 1 undefined row for distribution Channel - 
+combined_data <- combined_data %>% filter(DistributionChannel != "Undefined")
+
+
+sort(table(combined_data$IsRepeatedGuest), decreasing = T)
+
+sort(table(combined_data$PreviousCancellations), decreasing = T)
+sort(table(combined_data$PreviousBookingsNotCanceled), decreasing = T)
+
+sort(table(combined_data$ReservedRoomType), decreasing = T)
+sort(table(combined_data$AssignedRoomType), decreasing = T)
+sort(table(combined_data$BookingChanges), decreasing = T)
+sort(table(combined_data$DepositType), decreasing = T)
+sort(table(combined_data$DaysInWaitingList), decreasing = T)
+sort(table(combined_data$CustomerType), decreasing = T)
+sort(table(combined_data$RequiredCarParkingSpaces), decreasing = T)
+sort(table(combined_data$TotalOfSpecialRequests), decreasing = T)
+sort(table(combined_data$HotelType), decreasing = T)
+
+## After removing undefined and ambiguous rows --- 
+############ MAKING COLUMNS PROPER DATATYPE  ####### (Converting into factor)
 
 # https://datascience.stackexchange.com/questions/12018/when-to-choose-character-instead-of-factor-in-r
 
@@ -138,8 +182,6 @@ anyNA(combined_data)   # FALSE meaning no NA values in dataset.
 #################------------------- Adding new columns based on arrival date  -----------------##########################
 
 #### SEASON COLUMN ######
-
-EnsurePackage("lubridate")
 combined_data$Season <- quarter(combined_data$ArrivalDate)
 combined_data$Season[combined_data$Season == 1] <- "Spring"
 combined_data$Season[combined_data$Season == 2] <- "Summer"
@@ -150,12 +192,14 @@ combined_data$Season <- as.factor(combined_data$Season)
 
 
 ### Arrival Year column ######
-
 combined_data$ArrivalYear <- as.factor(format(combined_data$ArrivalDate, "%Y"))
 
 #### Arrival Month Column ######
-
 combined_data$ArrivalMonth <- as.factor(month.name[as.numeric(format(combined_data$ArrivalDate, "%m"))])
+
+
+
+
 
 
 #######-----------------------Adding new categorical column, ParkingSpaceNeeded and AnySpecialRequests based on column 
@@ -228,8 +272,8 @@ length(combined_data$VisitorType[which(combined_data$VisitorType %notin% c("Solo
 combined_data <- combined_data %>% slice(-which(combined_data$VisitorType %notin% c("Solo Traveler", "Couple", "Business Travel", "Family")))
 
 
-
-
+table(combined_data$VisitorType)
+combined_data$VisitorType <- as.factor(combined_data$VisitorType)
 
 #########################-------------Analyzing IsCanceled, ReservationStatus for any mismatched data-------------------##############################
 
@@ -313,6 +357,11 @@ str(combined_data)
 
 
 
+# Cleaned resort data and city data seperately if needed for plots
+resort_data <- combined_data %>% dplyr::filter(HotelType == "resort")
+city_data <- combined_data %>% dplyr::filter(HotelType == "city")
+
+
 ################################################   CLEANING DONE!!!!!! READY TO MAKE PLOTS ############################################
 # -------------------------------------------------------------------------------------------------------------------------------------
 #######################################################################################################################################
@@ -326,22 +375,18 @@ str(combined_data)
 
 sort(table(combined_data$IsCanceled), decreasing = T)
 sort(table(combined_data$ReservationStatus), decreasing = T)
-
 sort(table(combined_data$StaysInWeekendNights), decreasing = T)
 sort(table(combined_data$StaysInWeekNights), decreasing = T)
 sort(table(combined_data$Adults), decreasing = T)
 sort(table(combined_data$Children), decreasing = T)
 sort(table(combined_data$Babies), decreasing = T)
-
 sort(table(combined_data$Meal), decreasing = T)
 sort(table(combined_data$Country), decreasing = T)
 sort(table(combined_data$MarketSegment), decreasing = T)
 sort(table(combined_data$DistributionChannel), decreasing = T)
 sort(table(combined_data$IsRepeatedGuest), decreasing = T)
-
 sort(table(combined_data$PreviousCancellations), decreasing = T)
 sort(table(combined_data$PreviousBookingsNotCanceled), decreasing = T)
-
 sort(table(combined_data$ReservedRoomType), decreasing = T)
 sort(table(combined_data$AssignedRoomType), decreasing = T)
 sort(table(combined_data$BookingChanges), decreasing = T)
@@ -351,16 +396,12 @@ sort(table(combined_data$CustomerType), decreasing = T)
 sort(table(combined_data$RequiredCarParkingSpaces), decreasing = T)
 sort(table(combined_data$TotalOfSpecialRequests), decreasing = T)
 sort(table(combined_data$HotelType), decreasing = T)
-
 sort(table(combined_data$ArrivalYear), decreasing = T)
 sort(table(combined_data$ArrivalMonth), decreasing = T)
 sort(table(combined_data$Season), decreasing = T)
-
 sort(table(combined_data$ParkingSpaceNeeded), decreasing = T)
-
 sort(table(combined_data$AnySpecialRequest), decreasing = T)
-
-
 sort(table(combined_data$VisitorType), decreasing = T)
 sort(table(combined_data$ADRType), decreasing = T)
+
 
