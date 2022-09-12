@@ -1,6 +1,5 @@
-# Predicting-Hotel-Revenue-and-Cancellations
+# Providing data-driven solutions to increase the Average Daily Revenue (ADR) of hotels and resorts and reduce Cancellations
 
-The aim of this project was to provide data-driven solutions using machine learning techniques to reduce cancelations for hotels located in cities and resorts and maximize revenue and profits. More cancelation leads to loss of revenue if the hotel cannot resell the room or if they have to pay for publicity of canceled rooms and resell the room at a lower price during the last minute. By predicting which bookings are likely to be canceled and by preventing these cancelations, hotels can increase their average daily rate and minimize the losses incurred after a booking is canceled.
 
 • Utilized the CRISP-DM process to analyze hotel guests data consisting of 119,300 rows using R.
 
@@ -13,3 +12,12 @@ The aim of this project was to provide data-driven solutions using machine learn
 • Performed association rules mining to find out what specific bookings are likely to be canceled by the customer.
 
 • Based on the initial analysis and machine learning models, provided business recommendations to reduce cancelation rates and increase profits.
+
+### After data mining, I came up with the following business recommendations - 
+
+Cater to the Business Travel visitor type among the city and resort hotels, offering free room upgrades after a certain number of stays, and ascertain local business partnerships.
+When expanding your hotels, focus on city locations given they generate more ADR.
+Especially at city hotel locations, focus on Couples, and offer them room upgrades and meal vouchers.
+Incentivize staying at hotels during the fall and summer seasons to prevent more cancellations, which could be done by recommending seasonal activities and tourist attractions.
+Have a flexible deposit strategy so that you are more likely to gain ADR from all types of customers, instead of having most visitor types have no deposit when making reservations.
+
