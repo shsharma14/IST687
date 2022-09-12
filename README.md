@@ -15,9 +15,9 @@
 
 ### After data mining, I came up with the following business recommendations - 
 
-Cater to the Business Travel visitor type among the city and resort hotels, offering free room upgrades after a certain number of stays, and ascertain local business partnerships.
-When expanding your hotels, focus on city locations given they generate more ADR.
-Especially at city hotel locations, focus on Couples, and offer them room upgrades and meal vouchers.
-Incentivize staying at hotels during the fall and summer seasons to prevent more cancellations, which could be done by recommending seasonal activities and tourist attractions.
-Have a flexible deposit strategy so that you are more likely to gain ADR from all types of customers, instead of having most visitor types have no deposit when making reservations.
+- Cater to the Business Travel visitor type among the city and resort hotels, offering free room upgrades after a certain number of stays, and ascertain local business partnerships.
+- When expanding your hotels, focus on city locations given they generate more ADR.
+- Especially at city hotel locations, focus on Couples, and offer them room upgrades and meal vouchers.
+- Incentivize staying at hotels during the fall and summer seasons to prevent more cancellations, which could be done by recommending seasonal activities and tourist attractions.
+- Have a flexible deposit strategy so that you are more likely to gain ADR from all types of customers, instead of having most visitor types have no deposit when making reservations.
 
